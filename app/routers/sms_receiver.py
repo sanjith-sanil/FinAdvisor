@@ -15,6 +15,10 @@ from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.sms_receiver import SmsReceiveRequest
 from app.services.sms_parser_service import parse_sms
+from app.services.balance_sync_service import (
+    resolve_transaction_accounts,
+    sync_balances_for_transaction,
+)
 
 router = APIRouter(prefix="/api/v1/sms", tags=["sms-webhook"])
 
@@ -79,7 +83,18 @@ async def receive_sms(
                 raw_message=payload.message,
             )
             db.add(txn)
+            await resolve_transaction_accounts(db, txn)
             await db.flush()
+            if txn.card_id or txn.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=txn.user_id,
+                    card_id=txn.card_id,
+                    bank_account_id=txn.bank_account_id,
+                    amount=txn.amount,
+                    txn_type=txn.transaction_type,
+                    operation="insert"
+                )
             raw.parsed_transaction_id = txn.id
             transaction_id = txn.id
 
@@ -155,7 +170,18 @@ async def receive_bulk(
                     raw_message=item.message,
                 )
                 db.add(txn)
+                await resolve_transaction_accounts(db, txn)
                 await db.flush()
+                if txn.card_id or txn.bank_account_id:
+                    await sync_balances_for_transaction(
+                        db=db,
+                        user_id=txn.user_id,
+                        card_id=txn.card_id,
+                        bank_account_id=txn.bank_account_id,
+                        amount=txn.amount,
+                        txn_type=txn.transaction_type,
+                        operation="insert"
+                    )
                 raw.parsed_transaction_id = txn.id
         results.append({"user_id": item.user_id, "parsed": parsed_ok})
         user.sms_configured = True

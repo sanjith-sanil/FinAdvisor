@@ -26,6 +26,7 @@ let cardChatActiveLabel = "";
 let cardChatEntityLabel = "";
 let cardChatActiveCard = null;
 const cardChatHistory = {};
+let activeCalcCard = null;
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -721,6 +722,14 @@ function getDaysUntilDue(dueDateDay) {
 }
 
 function handleRecAction(actionType) {
+  if (actionType === "utilization_target" || actionType === "payment_plan") {
+    const card = allCards.find((c) => c.id === openCardId);
+    if (card) {
+      openTargetCalcModal(card);
+      return;
+    }
+  }
+
   const messages = {
     payment_plan: "Opening payment plan calculator...",
     utilization_target: "Calculating utilization target...",
@@ -731,6 +740,163 @@ function handleRecAction(actionType) {
     rewards: "Opening rewards optimization guide...",
   };
   showToast(messages[actionType] || "Opening...", "info");
+}
+
+function openTargetCalcModal(card) {
+  activeCalcCard = card;
+  const modal = document.getElementById("targetCalcModal");
+  if (!modal) return;
+
+  // Set card info
+  document.getElementById("calcCardName").textContent = `${card.bank_name || "Card"} ••••${card.card_last4 || "0000"}`;
+  
+  const balance = Number(card.current_balance || 0);
+  const limit = Number(card.credit_limit || 0);
+  const util = limit > 0 ? (balance / limit) * 100 : 0;
+
+  document.getElementById("calcCurrentBalance").textContent = `Rs${formatNumber(balance.toFixed(0))}`;
+  document.getElementById("calcCreditLimit").textContent = `Rs${formatNumber(limit.toFixed(0))}`;
+  
+  const utilText = document.getElementById("calcCurrentUtil");
+  utilText.textContent = `${util.toFixed(1)}%`;
+  if (util < 30) {
+    utilText.style.color = "#10b981";
+  } else if (util < 60) {
+    utilText.style.color = "#f59e0b";
+  } else {
+    utilText.style.color = "#ef4444";
+  }
+
+  // Reset inputs to default target 30%
+  const slider = document.getElementById("calcTargetUtilSlider");
+  const utilInput = document.getElementById("calcTargetUtilInput");
+  const paymentInput = document.getElementById("calcPaymentInput");
+
+  if (slider) slider.value = 30;
+  if (utilInput) utilInput.value = 30;
+  if (paymentInput) paymentInput.value = "";
+  document.getElementById("calcTargetUtilVal").textContent = "30%";
+
+  modal.classList.remove("hidden");
+  modal.style.display = "block";
+  if (window.lucide) lucide.createIcons();
+
+  recalculateTarget("util", 30);
+}
+
+function recalculateTarget(source, value) {
+  if (!activeCalcCard) return;
+
+  const balance = Number(activeCalcCard.current_balance || 0);
+  const limit = Number(activeCalcCard.credit_limit || 0);
+  
+  let paymentRequired = 0;
+  let newUtil = 0;
+
+  if (source === "util") {
+    const targetUtil = value; // in %
+    const targetBalance = limit * (targetUtil / 100);
+    paymentRequired = Math.max(0, balance - targetBalance);
+    newUtil = targetUtil;
+  } else if (source === "payment") {
+    const payment = value;
+    paymentRequired = payment;
+    const newBalance = Math.max(0, balance - payment);
+    newUtil = limit > 0 ? (newBalance / limit) * 100 : 0;
+  }
+
+  // Update DOM results
+  document.getElementById("calcPaymentRequired").textContent = `Rs${formatNumber(paymentRequired.toFixed(0))}`;
+  document.getElementById("calcNewUtil").textContent = `${newUtil.toFixed(1)}%`;
+
+  const newUtilBar = document.getElementById("calcNewUtilBar");
+  const newUtilText = document.getElementById("calcNewUtil");
+
+  if (newUtilBar) {
+    newUtilBar.style.width = `${Math.min(newUtil, 100)}%`;
+    let color = "#10b981";
+    if (newUtil >= 60) {
+      color = "#ef4444";
+    } else if (newUtil >= 30) {
+      color = "#f59e0b";
+    }
+    newUtilBar.style.background = color;
+    if (newUtilText) newUtilText.style.color = color;
+  }
+
+  // Generate dynamic insight
+  let insightText = "";
+  if (newUtil <= 30) {
+    insightText = `Paying Rs ${formatNumber(paymentRequired.toFixed(0))} to reach ${newUtil.toFixed(1)}% utilization keeps your credit ratio in the optimal zone (below 30%) and helps boost your credit score.`;
+  } else if (newUtil <= 50) {
+    insightText = `Paying Rs ${formatNumber(paymentRequired.toFixed(0))} will bring your utilization down to ${newUtil.toFixed(1)}%. While better, try aiming for below 30% for a stronger boost to your credit score.`;
+  } else if (newUtil < 80) {
+    insightText = `Paying Rs ${formatNumber(paymentRequired.toFixed(0))} reduces utilization to ${newUtil.toFixed(1)}%, but it remains elevated. Keeping utilization above 50% can trigger warning flags on your credit report.`;
+  } else {
+    insightText = `Your utilization remains critically high at ${newUtil.toFixed(1)}%. Utilization above 80% damages your credit score. Consider a larger payment to get below 50% or 30%.`;
+  }
+
+  const calcInsightText = document.getElementById("calcInsightText");
+  if (calcInsightText) calcInsightText.textContent = insightText;
+}
+
+function setupCalcModalListeners() {
+  const modal = document.getElementById("targetCalcModal");
+  const closeBtn1 = document.getElementById("closeCalcModal");
+  const closeBtn2 = document.getElementById("closeCalcModalBtn");
+  const slider = document.getElementById("calcTargetUtilSlider");
+  const paymentInput = document.getElementById("calcPaymentInput");
+  const utilInput = document.getElementById("calcTargetUtilInput");
+
+  if (!modal) return;
+
+  const closeCalc = () => {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    activeCalcCard = null;
+  };
+
+  closeBtn1?.addEventListener("click", closeCalc);
+  closeBtn2?.addEventListener("click", closeCalc);
+  modal.querySelector(".modal-overlay")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeCalc();
+  });
+
+  slider?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    const val = parseInt(slider.value);
+    document.getElementById("calcTargetUtilVal").textContent = `${val}%`;
+    if (utilInput) utilInput.value = val;
+    if (paymentInput) paymentInput.value = "";
+    recalculateTarget("util", val);
+  });
+
+  utilInput?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    let val = parseInt(utilInput.value);
+    if (isNaN(val)) return;
+    if (val < 5) val = 5;
+    if (val > 100) val = 100;
+    
+    if (slider) slider.value = val;
+    document.getElementById("calcTargetUtilVal").textContent = `${val}%`;
+    if (paymentInput) paymentInput.value = "";
+    recalculateTarget("util", val);
+  });
+
+  paymentInput?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    let payVal = parseFloat(paymentInput.value);
+    if (isNaN(payVal)) {
+      const sliderVal = parseInt(slider?.value || "30");
+      recalculateTarget("util", sliderVal);
+      return;
+    }
+    if (payVal < 0) payVal = 0;
+    
+    if (utilInput) utilInput.value = "";
+    recalculateTarget("payment", payVal);
+  });
 }
 
 function generateCardRecommendations(card) {
@@ -761,6 +927,8 @@ function generateCardRecommendations(card) {
       impactBg: "#FFF7ED",
       title: "Reduce Credit Utilization",
       description: `Utilization at ${utilization.toFixed(1)}%. Keeping it below 30% improves your credit score significantly. Target: Rs${formatNumber((card.credit_limit * 0.3).toFixed(0))} or less.`,
+      action: "Calculate Target",
+      actionType: "utilization_target",
     });
   }
 
@@ -1400,13 +1568,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (window.lucide) {
     lucide.createIcons();
   }
-
+ 
   initFilters();
   initModalEvents();
   bindCardChatModalEvents();
   handleCardTypeChange();
   renderModalPreview();
-
+  setupCalcModalListeners();
+ 
   try {
     await fetchCards();
   } catch (err) {

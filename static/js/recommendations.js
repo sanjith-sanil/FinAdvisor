@@ -1,3 +1,7 @@
+let allCards = [];
+let allRecs = [];
+let activeCalcCard = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.lucide) lucide.createIcons();
 
@@ -11,15 +15,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     ]);
 
     const cards = await cardsRes.json();
+    allCards = cards;
     const txnData = await txnRes.json();
     const summary = await summaryRes.json();
 
     const transactions = Array.isArray(txnData) ? txnData : txnData.items || txnData.transactions || [];
     const recs = generateAllRecommendations(cards, transactions, summary);
+    allRecs = recs;
 
     renderRecommendations(recs);
     renderScoreCard(summary, cards);
     initFilters(recs);
+    setupCalcModalListeners();
   } catch (err) {
     console.error("Error loading recommendations:", err);
     const recsList = document.getElementById("recsList");
@@ -98,21 +105,7 @@ function generateAllRecommendations(cards, transactions, summary) {
     }
   });
 
-  if (creditCards.length > 0) {
-    recs.push({
-      id: "autopay",
-      category: "payment",
-      impact: "medium",
-      icon: "repeat",
-      iconColor: "#3B82F6",
-      iconBg: "#EFF6FF",
-      title: "Set Up Auto-Pay",
-      subtitle: "Medium Impact · Payment Protection",
-      description: `You have ${creditCards.length} credit card${creditCards.length > 1 ? "s" : ""}. Setting up auto-pay for minimum payments ensures you never miss a due date and protects your credit score.`,
-      action: "Configure Auto-Pay",
-      detail: "A single missed payment can drop your CIBIL score by 50-100 points and stays on your credit report for 7 years.",
-    });
-  }
+
 
   const highInterestCards = creditCards.filter((c) => c.pending_emi_amount > 0 && c.emi_interest_rate > 14);
   if (highInterestCards.length > 0) {
@@ -173,19 +166,7 @@ function generateAllRecommendations(cards, transactions, summary) {
     });
   }
 
-  recs.push({
-    id: "emergency-fund",
-    category: "savings",
-    impact: "low",
-    icon: "shield",
-    iconColor: "#10B981",
-    iconBg: "#ECFDF5",
-    title: "Build an Emergency Fund",
-    subtitle: "Low Impact · Financial Security",
-    description: "Financial advisors recommend keeping 3-6 months of expenses in an easily accessible savings account to avoid credit card debt during emergencies.",
-    action: "Calculate Target",
-    detail: "An emergency fund prevents you from relying on high-interest credit cards during unexpected expenses.",
-  });
+
 
   return recs;
 }
@@ -272,11 +253,10 @@ function renderScoreCard(summary, cards) {
       : 0;
 
     const factorList = [
-      { label: "Credit Utilization", score: avgUtil < 30 ? 25 : avgUtil < 60 ? 15 : 5, max: 25, color: avgUtil < 30 ? "#10B981" : "#F59E0B" },
-      { label: "Payment History", score: 20, max: 20, color: "#10B981" },
-      { label: "EMI Management", score: 18, max: 20, color: "#3B82F6" },
-      { label: "Spending Pattern", score: 17, max: 20, color: "#7C3AED" },
-      { label: "Emergency Fund", score: 10, max: 15, color: "#F59E0B" },
+      { label: "Credit Utilization", score: avgUtil < 30 ? 30 : avgUtil < 60 ? 20 : 10, max: 30, color: avgUtil < 30 ? "#10B981" : "#F59E0B" },
+      { label: "Payment History", score: 25, max: 25, color: "#10B981" },
+      { label: "EMI Management", score: 25, max: 25, color: "#3B82F6" },
+      { label: "Spending Pattern", score: 20, max: 20, color: "#7C3AED" },
     ];
 
     factors.innerHTML = factorList
@@ -312,10 +292,177 @@ function initFilters(recs) {
   });
 }
 
-function handleRecAction() {
-  if (window.showToast) {
-    showToast("Opening recommendation details...", "info");
+function handleRecAction(recId) {
+  const rec = allRecs.find((r) => r.id === recId);
+  if (!rec) return;
+
+  if (rec.id.startsWith("med-util-") || rec.id.startsWith("high-util-")) {
+    const card = allCards.find((c) => c.id === rec.cardId);
+    if (card) {
+      openTargetCalcModal(card);
+    }
+  } else {
+    if (window.showToast) {
+      showToast(rec.action || "Opening...", "info");
+    }
   }
+}
+
+function openTargetCalcModal(card) {
+  activeCalcCard = card;
+  const modal = document.getElementById("targetCalcModal");
+  if (!modal) return;
+
+  // Set card info
+  document.getElementById("calcCardName").textContent = `${card.bank_name || "Card"} ••••${card.card_last4 || "0000"}`;
+  
+  const balance = Number(card.current_balance || 0);
+  const limit = Number(card.credit_limit || 0);
+  const util = limit > 0 ? (balance / limit) * 100 : 0;
+
+  document.getElementById("calcCurrentBalance").textContent = `Rs${formatNum(balance.toFixed(0))}`;
+  document.getElementById("calcCreditLimit").textContent = `Rs${formatNum(limit.toFixed(0))}`;
+  
+  const utilText = document.getElementById("calcCurrentUtil");
+  utilText.textContent = `${util.toFixed(1)}%`;
+  if (util < 30) {
+    utilText.style.color = "#10b981";
+  } else if (util < 60) {
+    utilText.style.color = "#f59e0b";
+  } else {
+    utilText.style.color = "#ef4444";
+  }
+
+  // Reset inputs to default target 30%
+  const slider = document.getElementById("calcTargetUtilSlider");
+  const utilInput = document.getElementById("calcTargetUtilInput");
+  const paymentInput = document.getElementById("calcPaymentInput");
+
+  if (slider) slider.value = 30;
+  if (utilInput) utilInput.value = 30;
+  if (paymentInput) paymentInput.value = "";
+  document.getElementById("calcTargetUtilVal").textContent = "30%";
+
+  modal.classList.remove("hidden");
+  modal.style.display = "block";
+  if (window.lucide) lucide.createIcons();
+
+  recalculateTarget("util", 30);
+}
+
+function recalculateTarget(source, value) {
+  if (!activeCalcCard) return;
+
+  const balance = Number(activeCalcCard.current_balance || 0);
+  const limit = Number(activeCalcCard.credit_limit || 0);
+  
+  let paymentRequired = 0;
+  let newUtil = 0;
+
+  if (source === "util") {
+    const targetUtil = value; // in %
+    const targetBalance = limit * (targetUtil / 100);
+    paymentRequired = Math.max(0, balance - targetBalance);
+    newUtil = targetUtil;
+  } else if (source === "payment") {
+    const payment = value;
+    paymentRequired = payment;
+    const newBalance = Math.max(0, balance - payment);
+    newUtil = limit > 0 ? (newBalance / limit) * 100 : 0;
+  }
+
+  // Update DOM results
+  document.getElementById("calcPaymentRequired").textContent = `Rs${formatNum(paymentRequired.toFixed(0))}`;
+  document.getElementById("calcNewUtil").textContent = `${newUtil.toFixed(1)}%`;
+
+  const newUtilBar = document.getElementById("calcNewUtilBar");
+  const newUtilText = document.getElementById("calcNewUtil");
+
+  if (newUtilBar) {
+    newUtilBar.style.width = `${Math.min(newUtil, 100)}%`;
+    let color = "#10b981";
+    if (newUtil >= 60) {
+      color = "#ef4444";
+    } else if (newUtil >= 30) {
+      color = "#f59e0b";
+    }
+    newUtilBar.style.background = color;
+    if (newUtilText) newUtilText.style.color = color;
+  }
+
+  // Generate dynamic insight
+  let insightText = "";
+  if (newUtil <= 30) {
+    insightText = `Paying Rs ${formatNum(paymentRequired.toFixed(0))} to reach ${newUtil.toFixed(1)}% utilization keeps your credit ratio in the optimal zone (below 30%) and helps boost your credit score.`;
+  } else if (newUtil <= 50) {
+    insightText = `Paying Rs ${formatNum(paymentRequired.toFixed(0))} will bring your utilization down to ${newUtil.toFixed(1)}%. While better, try aiming for below 30% for a stronger boost to your credit score.`;
+  } else if (newUtil < 80) {
+    insightText = `Paying Rs ${formatNum(paymentRequired.toFixed(0))} reduces utilization to ${newUtil.toFixed(1)}%, but it remains elevated. Keeping utilization above 50% can trigger warning flags on your credit report.`;
+  } else {
+    insightText = `Your utilization remains critically high at ${newUtil.toFixed(1)}%. Utilization above 80% severely damages your credit score. Consider a larger payment to get below 50% or 30%.`;
+  }
+
+  const calcInsightText = document.getElementById("calcInsightText");
+  if (calcInsightText) calcInsightText.textContent = insightText;
+}
+
+function setupCalcModalListeners() {
+  const modal = document.getElementById("targetCalcModal");
+  const closeBtn1 = document.getElementById("closeCalcModal");
+  const closeBtn2 = document.getElementById("closeCalcModalBtn");
+  const slider = document.getElementById("calcTargetUtilSlider");
+  const paymentInput = document.getElementById("calcPaymentInput");
+  const utilInput = document.getElementById("calcTargetUtilInput");
+
+  if (!modal) return;
+
+  const closeCalc = () => {
+    modal.classList.add("hidden");
+    modal.style.display = "none";
+    activeCalcCard = null;
+  };
+
+  closeBtn1?.addEventListener("click", closeCalc);
+  closeBtn2?.addEventListener("click", closeCalc);
+  modal.querySelector(".modal-overlay")?.addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeCalc();
+  });
+
+  slider?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    const val = parseInt(slider.value);
+    document.getElementById("calcTargetUtilVal").textContent = `${val}%`;
+    if (utilInput) utilInput.value = val;
+    if (paymentInput) paymentInput.value = "";
+    recalculateTarget("util", val);
+  });
+
+  utilInput?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    let val = parseInt(utilInput.value);
+    if (isNaN(val)) return;
+    if (val < 5) val = 5;
+    if (val > 100) val = 100;
+    
+    if (slider) slider.value = val;
+    document.getElementById("calcTargetUtilVal").textContent = `${val}%`;
+    if (paymentInput) paymentInput.value = "";
+    recalculateTarget("util", val);
+  });
+
+  paymentInput?.addEventListener("input", () => {
+    if (!activeCalcCard) return;
+    let payVal = parseFloat(paymentInput.value);
+    if (isNaN(payVal)) {
+      const sliderVal = parseInt(slider?.value || "30");
+      recalculateTarget("util", sliderVal);
+      return;
+    }
+    if (payVal < 0) payVal = 0;
+    
+    if (utilInput) utilInput.value = "";
+    recalculateTarget("payment", payVal);
+  });
 }
 
 function formatNum(num) {

@@ -11,6 +11,10 @@ from app.models.transaction import Transaction
 from app.models.enums import SmsSourceType, TransactionSource, TransactionType
 from app.schemas.sms_email_raw import SmsEmailRawOut, SmsIngestRequest
 from app.services.sms_parser_service import parse_sms
+from app.services.balance_sync_service import (
+    resolve_transaction_accounts,
+    sync_balances_for_transaction,
+)
 
 router = APIRouter(prefix="/api/v1/sms", tags=["sms"])
 
@@ -61,7 +65,18 @@ async def ingest_sms(user_id: uuid.UUID, payload: SmsIngestRequest, db: AsyncSes
                 raw_message=payload.raw_sms,
             )
             db.add(txn)
+            await resolve_transaction_accounts(db, txn)
             await db.flush()
+            if txn.card_id or txn.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=user_id,
+                    card_id=txn.card_id,
+                    bank_account_id=txn.bank_account_id,
+                    amount=txn.amount,
+                    txn_type=txn.transaction_type,
+                    operation="insert"
+                )
             raw.parsed_transaction_id = txn.id
 
     await db.commit()
@@ -118,7 +133,18 @@ async def ingest_bulk(user_id: uuid.UUID, payload: list[SmsIngestRequest], db: A
                 raw_message=item.raw_sms,
             )
             db.add(txn)
+            await resolve_transaction_accounts(db, txn)
             await db.flush()
+            if txn.card_id or txn.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=user_id,
+                    card_id=txn.card_id,
+                    bank_account_id=txn.bank_account_id,
+                    amount=txn.amount,
+                    txn_type=txn.transaction_type,
+                    operation="insert"
+                )
             raw.parsed_transaction_id = txn.id
 
     results.append({"raw": item.raw_sms, "parsed": parsed_ok})

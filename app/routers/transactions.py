@@ -11,6 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionCreate, TransactionOut, TransactionUpdate
+from app.services.balance_sync_service import (
+    resolve_transaction_accounts,
+    sync_balances_for_transaction,
+)
 
 router = APIRouter(prefix="/api/v1/transactions", tags=["transactions"])
 
@@ -85,6 +89,18 @@ async def list_transactions(
 async def create_transaction(payload: TransactionCreate, db: AsyncSession = Depends(get_db)) -> TransactionOut:
     txn = Transaction(**payload.model_dump())
     db.add(txn)
+    await resolve_transaction_accounts(db, txn)
+    await db.flush()
+    if txn.card_id or txn.bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=txn.card_id,
+            bank_account_id=txn.bank_account_id,
+            amount=txn.amount,
+            txn_type=txn.transaction_type,
+            operation="insert"
+        )
     await db.commit()
     await db.refresh(txn)
     return txn
@@ -105,8 +121,41 @@ async def update_transaction(
     txn = await db.get(Transaction, transaction_id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    old_amount = float(txn.amount)
+    old_type = txn.transaction_type
+    old_card_id = txn.card_id
+    old_bank_account_id = txn.bank_account_id
+
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(txn, field, value)
+        
+    await resolve_transaction_accounts(db, txn)
+    await db.flush()
+
+    if old_card_id or old_bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=old_card_id,
+            bank_account_id=old_bank_account_id,
+            amount=0.0,
+            txn_type=old_type,
+            operation="delete",
+            old_amount=old_amount,
+            old_type=old_type
+        )
+    if txn.card_id or txn.bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=txn.card_id,
+            bank_account_id=txn.bank_account_id,
+            amount=txn.amount,
+            txn_type=txn.transaction_type,
+            operation="insert"
+        )
+        
     await db.commit()
     await db.refresh(txn)
     return txn
@@ -117,6 +166,20 @@ async def delete_transaction(transaction_id: uuid.UUID, db: AsyncSession = Depen
     txn = await db.get(Transaction, transaction_id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    if txn.card_id or txn.bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=txn.card_id,
+            bank_account_id=txn.bank_account_id,
+            amount=0.0,
+            txn_type=txn.transaction_type,
+            operation="delete",
+            old_amount=txn.amount,
+            old_type=txn.transaction_type
+        )
+        
     await db.delete(txn)
     await db.commit()
     return {"status": "deleted"}

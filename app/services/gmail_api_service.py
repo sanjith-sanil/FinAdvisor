@@ -271,7 +271,23 @@ class GmailAPIService:
                         raw_message=parse_text,
                     )
                     db.add(txn)
+                    # Resolve card/account and update balances
+                    from app.services.balance_sync_service import (
+                        resolve_transaction_accounts,
+                        sync_balances_for_transaction,
+                    )
+                    await resolve_transaction_accounts(db, txn)
                     await db.flush()
+                    if txn.card_id or txn.bank_account_id:
+                        await sync_balances_for_transaction(
+                            db=db,
+                            user_id=email_config.user_id,
+                            card_id=txn.card_id,
+                            bank_account_id=txn.bank_account_id,
+                            amount=txn.amount,
+                            txn_type=txn.transaction_type,
+                            operation="insert"
+                        )
                     raw.parsed_transaction_id = txn.id
                     raw.is_processed = True
                     stats["transactions_saved"] += 1

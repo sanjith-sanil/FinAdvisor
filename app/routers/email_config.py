@@ -379,7 +379,22 @@ async def ingest_test_email(
                 raw_message=combined_text[:2000],
             )
             db.add(transaction)
+            from app.services.balance_sync_service import (
+                resolve_transaction_accounts,
+                sync_balances_for_transaction,
+            )
+            await resolve_transaction_accounts(db, transaction)
             await db.flush()
+            if transaction.card_id or transaction.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=payload.user_id,
+                    card_id=transaction.card_id,
+                    bank_account_id=transaction.bank_account_id,
+                    amount=transaction.amount,
+                    txn_type=transaction.transaction_type,
+                    operation="insert"
+                )
             
             raw.is_processed = True
             raw.parsed_transaction_id = transaction.id

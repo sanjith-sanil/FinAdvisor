@@ -23,6 +23,10 @@ from app.services.bank_domain_whitelist import get_bank_info
 from app.services.crypto_service import decrypt_text
 from app.services.sms_parser_service import looks_like_transaction_alert, parse_sms
 from app.services.emi_upsert_service import process_emi_from_email
+from app.services.balance_sync_service import (
+    resolve_transaction_accounts,
+    sync_balances_for_transaction,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +258,18 @@ async def fetch_all_bank_emails_from_folder(
                     raw_message=combined_text[:2000],
                 )
                 db.add(transaction)
+                await resolve_transaction_accounts(db, transaction)
                 await db.flush()
+                if transaction.card_id or transaction.bank_account_id:
+                    await sync_balances_for_transaction(
+                        db=db,
+                        user_id=user_id,
+                        card_id=transaction.card_id,
+                        bank_account_id=transaction.bank_account_id,
+                        amount=transaction.amount,
+                        txn_type=transaction.transaction_type,
+                        operation="insert"
+                    )
 
                 raw_entry.is_processed = True
                 raw_entry.parsed_transaction_id = transaction.id
@@ -429,6 +444,18 @@ async def reparse_email_raws(db: AsyncSession, user_id, since_days: int = 30) ->
             if raw.parsed_transaction_id:
                 txn = await db.get(Transaction, raw.parsed_transaction_id)
                 if txn:
+                    if txn.card_id or txn.bank_account_id:
+                        await sync_balances_for_transaction(
+                            db=db,
+                            user_id=txn.user_id,
+                            card_id=txn.card_id,
+                            bank_account_id=txn.bank_account_id,
+                            amount=0.0,
+                            txn_type=txn.transaction_type,
+                            operation="delete",
+                            old_amount=txn.amount,
+                            old_type=txn.transaction_type
+                        )
                     await db.delete(txn)
                     deleted += 1
                 raw.parsed_transaction_id = None
@@ -440,6 +467,11 @@ async def reparse_email_raws(db: AsyncSession, user_id, since_days: int = 30) ->
         if raw.parsed_transaction_id:
             txn = await db.get(Transaction, raw.parsed_transaction_id)
         if txn:
+            old_amount = float(txn.amount)
+            old_type = txn.transaction_type
+            old_card_id = txn.card_id
+            old_bank_account_id = txn.bank_account_id
+
             txn.transaction_type = txn_type
             txn.amount = parsed.get("amount") or txn.amount
             if parsed.get("merchant_name"):
@@ -450,6 +482,32 @@ async def reparse_email_raws(db: AsyncSession, user_id, since_days: int = 30) ->
                 txn.reference_number = parsed.get("reference_number")
             if parsed.get("transaction_date"):
                 txn.transaction_date = parsed.get("transaction_date")
+                
+            await resolve_transaction_accounts(db, txn)
+            await db.flush()
+
+            if old_card_id or old_bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=txn.user_id,
+                    card_id=old_card_id,
+                    bank_account_id=old_bank_account_id,
+                    amount=0.0,
+                    txn_type=old_type,
+                    operation="delete",
+                    old_amount=old_amount,
+                    old_type=old_type
+                )
+            if txn.card_id or txn.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=txn.user_id,
+                    card_id=txn.card_id,
+                    bank_account_id=txn.bank_account_id,
+                    amount=txn.amount,
+                    txn_type=txn.transaction_type,
+                    operation="insert"
+                )
             updated += 1
         else:
             txn = Transaction(
@@ -468,7 +526,18 @@ async def reparse_email_raws(db: AsyncSession, user_id, since_days: int = 30) ->
                 raw_message=combined[:2000],
             )
             db.add(txn)
+            await resolve_transaction_accounts(db, txn)
             await db.flush()
+            if txn.card_id or txn.bank_account_id:
+                await sync_balances_for_transaction(
+                    db=db,
+                    user_id=user_id,
+                    card_id=txn.card_id,
+                    bank_account_id=txn.bank_account_id,
+                    amount=txn.amount,
+                    txn_type=txn.transaction_type,
+                    operation="insert"
+                )
             raw.parsed_transaction_id = txn.id
             created += 1
 

@@ -10,6 +10,10 @@ from app.models.transaction import Transaction
 from app.schemas.pdf_upload import PdfUploadOut
 from app.services.pdf_parser_service import parse_pdf
 from app.utils.files import save_upload_file
+from app.services.balance_sync_service import (
+    resolve_transaction_accounts,
+    sync_balances_for_transaction,
+)
 
 router = APIRouter(prefix="/api/v1/pdf", tags=["pdf"])
 
@@ -36,18 +40,38 @@ async def upload_pdf(
     await db.flush()
 
     transactions = parse_pdf(file_path)
+    bank_code = None
+    if bank_name:
+        for k in ["HDFC", "SBI", "ICICI", "AXIS", "KOTAK", "YES", "INDUSIND", "IDFC"]:
+            if k in bank_name.upper():
+                bank_code = k
+                break
+
     for txn in transactions:
-        db.add(
-            Transaction(
-                user_id=user_id,
-                transaction_type=txn["transaction_type"],
-                amount=txn["amount"],
-                description=txn["description"],
-                transaction_date=txn["transaction_date"],
-                balance_after=txn["balance_after"],
-                source=TransactionSource.pdf_upload,
-            )
+        t = Transaction(
+            user_id=user_id,
+            transaction_type=txn["transaction_type"],
+            amount=txn["amount"],
+            description=txn["description"],
+            transaction_date=txn["transaction_date"],
+            balance_after=txn["balance_after"],
+            source=TransactionSource.pdf_upload,
+            bank_name=bank_name,
+            bank_code=bank_code
         )
+        db.add(t)
+        await resolve_transaction_accounts(db, t)
+        await db.flush()
+        if t.card_id or t.bank_account_id:
+            await sync_balances_for_transaction(
+                db=db,
+                user_id=user_id,
+                card_id=t.card_id,
+                bank_account_id=t.bank_account_id,
+                amount=t.amount,
+                txn_type=t.transaction_type,
+                operation="insert"
+            )
 
     upload.status = PdfStatus.completed
     upload.total_transactions_parsed = len(transactions)
@@ -80,18 +104,38 @@ async def reparse_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db
     await db.commit()
 
     transactions = parse_pdf(upload.file_path)
+    bank_code = None
+    if upload.bank_name:
+        for k in ["HDFC", "SBI", "ICICI", "AXIS", "KOTAK", "YES", "INDUSIND", "IDFC"]:
+            if k in upload.bank_name.upper():
+                bank_code = k
+                break
+
     for txn in transactions:
-        db.add(
-            Transaction(
-                user_id=upload.user_id,
-                transaction_type=txn["transaction_type"],
-                amount=txn["amount"],
-                description=txn["description"],
-                transaction_date=txn["transaction_date"],
-                balance_after=txn["balance_after"],
-                source=TransactionSource.pdf_upload,
-            )
+        t = Transaction(
+            user_id=upload.user_id,
+            transaction_type=txn["transaction_type"],
+            amount=txn["amount"],
+            description=txn["description"],
+            transaction_date=txn["transaction_date"],
+            balance_after=txn["balance_after"],
+            source=TransactionSource.pdf_upload,
+            bank_name=upload.bank_name,
+            bank_code=bank_code
         )
+        db.add(t)
+        await resolve_transaction_accounts(db, t)
+        await db.flush()
+        if t.card_id or t.bank_account_id:
+            await sync_balances_for_transaction(
+                db=db,
+                user_id=upload.user_id,
+                card_id=t.card_id,
+                bank_account_id=t.bank_account_id,
+                amount=t.amount,
+                txn_type=t.transaction_type,
+                operation="insert"
+            )
 
     upload.status = PdfStatus.completed
     upload.total_transactions_parsed = len(transactions)
