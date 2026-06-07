@@ -35,6 +35,7 @@ static_dir = base_dir / "static"
 uploads_dir = Path(settings.upload_dir)
 if not uploads_dir.is_absolute():
     uploads_dir = base_dir / uploads_dir
+uploads_dir.mkdir(parents=True, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
