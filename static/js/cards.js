@@ -603,8 +603,9 @@ function viewCardDetails(cardId, cardData = null) {
   document.querySelectorAll(".view-details-btn").forEach((btn) => btn.classList.remove("active"));
   document.querySelector(`.view-details-btn[data-card-id="${cardId}"]`)?.classList.add("active");
 
-  const sourceCard = cardData || allCards.find((item) => item.id === cardId);
+  const sourceCard = cardData || allCards.find((item) => String(item.id).toLowerCase() === String(cardId).toLowerCase());
   if (!sourceCard) {
+    console.error(`Card details not found for cardId: ${cardId}. Available cards:`, allCards.map(c => c.id));
     showToast("Card details not found", "error");
     return;
   }
@@ -722,11 +723,14 @@ function getDaysUntilDue(dueDateDay) {
 }
 
 function handleRecAction(actionType) {
+  console.log(`handleRecAction: type=${actionType}, openCardId=${openCardId}`);
   if (actionType === "utilization_target" || actionType === "payment_plan") {
-    const card = allCards.find((c) => c.id === openCardId);
+    const card = allCards.find((c) => String(c.id).toLowerCase() === String(openCardId).toLowerCase());
     if (card) {
       openTargetCalcModal(card);
       return;
+    } else {
+      console.warn(`Card not found for openCardId: ${openCardId} in handleRecAction`);
     }
   }
 
@@ -1412,7 +1416,7 @@ function renderModalPreview() {
 function bindCardChatModalEvents() {
   askCardBtn?.addEventListener("click", () => {
     const cardId = askCardBtn.dataset.cardId;
-    const card = allCards.find((item) => String(item.id) === String(cardId));
+    const card = allCards.find((item) => String(item.id).toLowerCase() === String(cardId).toLowerCase());
     if (card) {
       openCardChatbot(card);
     } else {

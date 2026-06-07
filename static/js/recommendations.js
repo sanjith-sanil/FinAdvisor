@@ -297,7 +297,7 @@ function handleRecAction(recId) {
   if (!rec) return;
 
   if (rec.id.startsWith("med-util-") || rec.id.startsWith("high-util-")) {
-    const card = allCards.find((c) => c.id === rec.cardId);
+    const card = allCards.find((c) => String(c.id).toLowerCase() === String(rec.cardId).toLowerCase());
     if (card) {
       openTargetCalcModal(card);
     }
