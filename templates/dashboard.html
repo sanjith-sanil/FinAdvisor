@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container">
+  <div class="dashboard-top-row">
+    <div class="section-title"><i data-lucide="layout-dashboard"></i>Dashboard</div>
+    <div class="dashboard-tabs">
+      <button class="tab-btn dashboard-tab active" data-tab="auto">Auto Calculations</button>
+      <button class="tab-btn dashboard-tab" data-tab="manual">Manual Input</button>
+    </div>
+  </div>
+  <div class="glass-card p-12 mt-12">
+    This app provides financial information only. Not a payment processor. Not SEBI registered.
+  </div>
+
+  <div id="autoTab">
+    <div class="grid grid-4 mt-16">
+      <div class="summary-card glass-card">
+        <div class="summary-icon primary">
+          <i data-lucide="credit-card"></i>
+        </div>
+        <div class="summary-value" id="totalOutstanding">0</div>
+        <div class="summary-label">Total Outstanding</div>
+        <span class="trend-pill negative" id="outstandingTrend">-2.1%</span>
+      </div>
+      <div class="summary-card glass-card">
+        <div class="summary-icon success">
+          <i data-lucide="trending-up"></i>
+        </div>
+        <div class="summary-value" id="availableCredit">0</div>
+        <div class="summary-label">Available Credit</div>
+        <span class="trend-pill positive">+4.5%</span>
+      </div>
+      <div class="summary-card glass-card">
+        <div class="summary-icon warning">
+          <i data-lucide="shopping-bag"></i>
+        </div>
+        <div class="summary-value" id="thisMonthSpending">0</div>
+        <div class="summary-label">This Month</div>
+        <span class="trend-pill" id="momChange">0%</span>
+      </div>
+      <div class="summary-card glass-card">
+        <div class="summary-icon secondary">
+          <i data-lucide="shield"></i>
+        </div>
+        <div id="healthScoreWidget"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2 mt-16">
+      <div class="chart-card glass-card category-card">
+        <div class="section-title"><i data-lucide="pie-chart"></i>Spending by Category</div>
+        <div class="category-chart-wrap">
+          <div class="category-chart">
+            <canvas id="categoryChart"></canvas>
+          </div>
+          <div id="categoryPlaceholder" class="empty-state hidden absolute-fill">
+            No spending data yet
+          </div>
+        </div>
+        <div class="legend-grid" id="categoryLegend"></div>
+      </div>
+      <div class="chart-card glass-card">
+        <div class="section-title"><i data-lucide="bar-chart"></i>Monthly Trend</div>
+        <div class="full-height-220"><canvas id="trendChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="glass-card p-16 mt-16">
+      <div class="section-title"><i data-lucide="activity"></i>Credit Utilization by Card</div>
+      <div id="utilizationList"></div>
+    </div>
+
+    <div class="grid grid-2 mt-16">
+      <div class="glass-card p-16">
+        <div class="section-title"><i data-lucide="banknote"></i>EMI Analysis</div>
+        <div id="emiList"></div>
+        <div class="mt-10 font-600 border-top-muted pt-8">
+          Total EMI Outflow: <span id="emiOutflow">0</span>
+        </div>
+        <div class="mt-6 font-600">
+          Total Minimum Due: <span id="totalMinimumDue">0</span>
+        </div>
+      </div>
+      <div class="glass-card p-16">
+        <div class="section-title"><i data-lucide="bell"></i>Smart Alerts</div>
+        <div id="alerts"></div>
+      </div>
+    </div>
+
+    <div class="glass-card p-16 mt-16">
+      <div class="section-title"><i data-lucide="list"></i>Recent Transactions</div>
+      <table class="transactions-table" id="recentTransactions"></table>
+      <div class="text-right mt-8">
+        <a href="/history" class="trend-card-note">View All History →</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="manualTab" class="hidden mt-16">
+    <div class="tab-panel" id="manual-panel">
+      <div class="grid-two-sidebar">
+        <div class="manual-form-side">
+          <div class="glass-card p-20 mb-12">
+            <div class="section-title"><i data-lucide="wallet"></i>Income Details</div>
+            <div class="grid grid-2 mt-12">
+              <div>
+                <label>Monthly Take-Home Income</label>
+                <input type="number" id="m-income" placeholder="e.g. 75000">
+              </div>
+              <div>
+                <label>Other Monthly Income</label>
+                <input type="number" id="m-other-income" placeholder="e.g. 5000">
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-20 mb-12">
+            <div class="section-title"><i data-lucide="credit-card"></i>Card Balances</div>
+            <div id="manual-card-inputs" class="mt-12">
+              <div>
+                <label>Total Outstanding Balance</label>
+                <input type="number" id="m-total-outstanding" placeholder="Total across all cards">
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-20 mb-12">
+            <div class="section-title"><i data-lucide="calendar"></i>EMI Details</div>
+            <div class="grid grid-2 mt-12">
+              <div>
+                <label>Total Monthly EMI</label>
+                <input type="number" id="m-total-emi" placeholder="All EMIs combined">
+              </div>
+              <div>
+                <label>Total Pending EMI Amount</label>
+                <input type="number" id="m-pending-emi" placeholder="Total pending">
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card p-20 mb-12">
+            <div class="section-title"><i data-lucide="receipt"></i>Monthly Expenses</div>
+            <div class="grid grid-2 mt-12">
+              <div>
+                <label>Rent / Housing</label>
+                <input type="number" id="m-rent" placeholder="e.g. 15000">
+              </div>
+              <div>
+                <label>Groceries</label>
+                <input type="number" id="m-groceries" placeholder="e.g. 8000">
+              </div>
+              <div>
+                <label>Utilities</label>
+                <input type="number" id="m-utilities" placeholder="e.g. 3000">
+              </div>
+              <div>
+                <label>Transport / Fuel</label>
+                <input type="number" id="m-transport" placeholder="e.g. 4000">
+              </div>
+              <div>
+                <label>Entertainment</label>
+                <input type="number" id="m-entertainment" placeholder="e.g. 2000">
+              </div>
+              <div>
+                <label>Other Fixed Expenses</label>
+                <input type="number" id="m-other-expenses" placeholder="e.g. 5000">
+              </div>
+            </div>
+          </div>
+
+          <button onclick="calculateManual()" class="btn btn-primary w-full h-44" type="button">
+            <i data-lucide="calculator"></i>
+            Calculate Financial Health
+          </button>
+        </div>
+
+        <div class="sticky-card glass-card" id="manual-results">
+          <div id="manual-results-placeholder" class="manual-placeholder p-20">
+            <i data-lucide="calculator"></i>
+            <div class="mt-8">Enter values and click Calculate</div>
+            <div class="text-sm mt-6">Results will appear here</div>
+          </div>
+          <div id="manual-results-content" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js?v=20260426-1"></script>
+{% endblock %}

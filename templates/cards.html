@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container cards-page">
+  <div class="cards-header-row">
+    <div class="section-title"><i data-lucide="credit-card"></i>My Cards</div>
+    <button class="btn btn-primary" id="openCardModal" type="button">+ Add New Card</button>
+  </div>
+
+  <div class="glass-card cards-filter-bar">
+    <button class="btn btn-pill active" data-filter="all" type="button">All</button>
+    <button class="btn btn-pill" data-filter="credit" type="button">Credit</button>
+    <button class="btn btn-pill" data-filter="debit" type="button">Debit</button>
+    <button class="btn btn-pill" data-filter="active" type="button">Active</button>
+    <button class="btn btn-pill" data-filter="inactive" type="button">Inactive</button>
+  </div>
+
+  <div class="glass-card empty-state" id="cardsEmpty">
+    <i data-lucide="credit-card" class="empty-icon"></i>
+    <div class="empty-title">No cards added yet</div>
+    <div class="empty-subtitle">Add your first card to start tracking utilization, EMIs, and rewards.</div>
+    <button class="btn btn-primary" id="addFirstCard" type="button">+ Add Your First Card</button>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid"></div>
+</section>
+
+<div class="card-details-panel-wrapper">
+  <div class="card-details-panel" id="cardDetailsPanel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i data-lucide="credit-card" class="panel-title-icon"></i>
+        <span id="detail-card-name">Card Details</span>
+      </div>
+      <button class="btn btn-outline ask-card-btn" id="askCardBtn" type="button">
+        <i data-lucide="message-circle"></i>
+        Ask About This Card
+      </button>
+      <button class="panel-close-btn" type="button" onclick="closeCardDetails()">
+        <i data-lucide="x" class="panel-close-icon"></i>
+        Close
+      </button>
+    </div>
+
+    <div class="details-section">
+      <div class="details-section-header">
+        <i data-lucide="bar-chart-2" class="details-section-icon"></i>
+        Financial Overview
+      </div>
+      <div class="stats-grid-4">
+        <div class="stat-item">
+          <div class="stat-label">Credit Limit</div>
+          <div class="stat-value" id="detail-credit-limit">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Outstanding Balance</div>
+          <div class="stat-value orange" id="detail-outstanding">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Available Credit</div>
+          <div class="stat-value green" id="detail-available">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Credit Utilization</div>
+          <div class="stat-value" id="detail-utilization">-</div>
+          <div class="util-bar-track">
+            <div class="util-bar-fill" id="detail-util-bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-grid-3 details-gap-top">
+        <div class="stat-item">
+          <div class="stat-label">Min Payment Due</div>
+          <div class="stat-value sm" id="detail-min-payment">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Payment Due Date</div>
+          <div class="stat-value sm" id="detail-due-date">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Days Until Due</div>
+          <div class="stat-value sm" id="detail-days-due">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-section">
+      <div class="details-section-header">
+        <i data-lucide="calendar" class="details-section-icon"></i>
+        EMI Details
+      </div>
+      <div class="stats-grid-3">
+        <div class="stat-item">
+          <div class="stat-label">Monthly EMI</div>
+          <div class="stat-value sm" id="detail-monthly-emi">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Pending EMI Amount</div>
+          <div class="stat-value sm orange" id="detail-pending-emi">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Remaining Months</div>
+          <div class="stat-value sm" id="detail-tenure">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Annual Interest Rate</div>
+          <div class="stat-value sm" id="detail-annual-rate">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Monthly Interest Rate</div>
+          <div class="stat-value sm" id="detail-monthly-rate">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Total Interest Payable</div>
+          <div class="stat-value sm orange" id="detail-total-interest">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-section">
+      <div class="details-section-header">
+        <i data-lucide="table" class="details-section-icon"></i>
+        EMI Schedule (Next 3 Months)
+      </div>
+      <table class="emi-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>EMI</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="emi-schedule-body">
+          <tr>
+            <td colspan="5" class="emi-placeholder">Select a card to view schedule</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="details-section" id="card-recommendations-section">
+      <div class="details-section-header">
+        <i data-lucide="zap" class="details-section-icon"></i>
+        Smart Recommendations for this Card
+      </div>
+      <div id="card-recommendations-list"></div>
+    </div>
+
+    <div class="details-section">
+      <div class="details-section-header">
+        <i data-lucide="list" class="details-section-icon"></i>
+        Recent Card Transactions
+      </div>
+      <table class="transactions-table card-txn-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="detail-transactions-body">
+          <tr>
+            <td colspan="5" class="emi-placeholder">Select a card to view transactions</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card-chatbot-modal" id="cardChatbotModal" aria-hidden="true">
+  <div class="card-chatbot-overlay" data-close="true"></div>
+  <div class="card-chatbot-panel" role="dialog" aria-modal="true">
+    <div class="chatbot-header card-chatbot-header">
+      <div class="chatbot-header-avatar">
+        <i data-lucide="bot"></i>
+      </div>
+      <div class="chatbot-header-copy">
+        <div class="chatbot-header-title" id="cardChatbotTitle">AI Assistant</div>
+        <div class="chatbot-header-subtitle">Card-specific insights</div>
+      </div>
+      <button class="chatbot-clear" id="cardChatClear" type="button" aria-label="Clear chat history">
+        <i data-lucide="trash-2"></i>
+      </button>
+      <button class="chatbot-close" id="cardChatbotClose" type="button" aria-label="Close chatbot">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="card-chatbot-suggestions" id="cardChatSuggestions"></div>
+
+    <div id="cardChatMessages" class="chatbot-messages"></div>
+
+    <div class="chatbot-input-wrap">
+      <input id="cardChatInput" type="text" placeholder="Ask about this card..." />
+      <button id="cardChatSend" type="button" aria-label="Send message">
+        <i data-lucide="send"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="cardModal" class="app-modal hidden" style="display:none">
+    <div class="modal-overlay">
+      <div class="modal card-modal">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add New Card</h3>
+          <button class="icon-btn" id="closeCardModal" type="button" aria-label="Close card modal" title="Close card modal"><i data-lucide="x"></i></button>
+        </div>
+
+        <div id="modalCardPreview" class="modal-card-preview"></div>
+
+        <form id="cardForm" class="grid grid-2">
+          <div>
+            <label for="cardType">Card Type</label>
+            <select id="cardType" name="card_type" required>
+              <option value="credit">Credit</option>
+              <option value="debit">Debit</option>
+            </select>
+          </div>
+          <div>
+            <label for="bankName">Bank Name</label>
+            <select id="bankName" name="bank_name" required>
+              <option value="HDFC">HDFC</option>
+              <option value="ICICI">ICICI</option>
+              <option value="Axis">Axis</option>
+              <option value="SBI">SBI</option>
+              <option value="Kotak">Kotak</option>
+              <option value="Yes Bank">Yes Bank</option>
+              <option value="IndusInd">IndusInd</option>
+              <option value="IDFC">IDFC</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="cardHolderName">Card Holder Name</label>
+            <input id="cardHolderName" name="card_holder_name" type="text" required />
+          </div>
+          <div>
+            <label for="cardLast4">Card Last 4 Digits</label>
+            <input id="cardLast4" name="card_last4" type="text" maxlength="4" pattern="\d{4}" required />
+          </div>
+          <div>
+            <label for="cardNetwork">Card Network</label>
+            <select id="cardNetwork" name="card_network">
+              <option value="visa">Visa</option>
+              <option value="mastercard">Mastercard</option>
+              <option value="rupay">RuPay</option>
+              <option value="amex">Amex</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="colorTheme">Color Theme</label>
+            <select id="colorTheme" name="color_theme">
+              <option value="hdfc">HDFC</option>
+              <option value="icici">ICICI</option>
+              <option value="axis">Axis</option>
+              <option value="sbi">SBI</option>
+              <option value="kotak">Kotak</option>
+              <option value="yes">Yes</option>
+              <option value="indusind">IndusInd</option>
+              <option value="idfc">IDFC</option>
+              <option value="default">Default</option>
+            </select>
+          </div>
+          <div>
+            <label for="expiryMonth">Expiry Month</label>
+            <select id="expiryMonth" name="expiry_month">
+              {% for m in range(1, 13) %}
+              <option value="{{ m }}">{{ "%02d" % m }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="expiryYear">Expiry Year</label>
+            <select id="expiryYear" name="expiry_year">
+              {% for y in range(2026, 2041) %}
+              <option value="{{ y }}">{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div data-credit>
+            <label for="creditLimit">Credit Limit</label>
+            <input id="creditLimit" name="credit_limit" type="number" step="0.01" min="0" />
+          </div>
+          <div data-credit>
+            <label for="currentBalance">Current Balance</label>
+            <input id="currentBalance" name="current_balance" type="number" step="0.01" min="0" />
+          </div>
+          <div data-credit>
+            <label for="billingCycleDate">Billing Cycle Date</label>
+            <input id="billingCycleDate" name="billing_cycle_date" type="number" min="1" max="31" />
+          </div>
+          <div data-credit>
+            <label for="paymentDueDate">Payment Due Date</label>
+            <input id="paymentDueDate" name="payment_due_date" type="number" min="1" max="31" />
+          </div>
+
+          <div data-credit>
+            <label for="annualFee">Annual Fee</label>
+            <input id="annualFee" name="annual_fee" type="number" step="0.01" min="0" />
+          </div>
+          <div data-credit>
+            <label for="rewardPoints">Reward Points</label>
+            <input id="rewardPoints" name="reward_points_balance" type="number" min="0" />
+          </div>
+          <div data-credit>
+            <label for="loungeAccess">Lounge Access</label>
+            <select id="loungeAccess" name="lounge_access">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+          <div data-credit>
+            <label for="loungeVisits">Lounge Visits / Quarter</label>
+            <input id="loungeVisits" name="lounge_visits_per_quarter" type="number" min="0" />
+          </div>
+          <div data-credit>
+            <label for="fuelWaiver">Fuel Surcharge Waiver</label>
+            <select id="fuelWaiver" name="fuel_surcharge_waiver">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+          <div data-credit>
+            <label for="rewardRate">Reward Rate</label>
+            <input id="rewardRate" name="reward_points_rate" type="text" placeholder="1 point per Rs100 spent" />
+          </div>
+          <div data-credit>
+            <label for="cashbackRate">Cashback Rate</label>
+            <input id="cashbackRate" name="cashback_rate" type="text" placeholder="1.5% on all spends" />
+          </div>
+          <div data-credit>
+            <label for="joiningFee">Joining Fee</label>
+            <input id="joiningFee" name="joining_fee" type="number" step="0.01" min="0" />
+          </div>
+
+          <div data-debit>
+            <label for="availableBalance">Available Balance</label>
+            <input id="availableBalance" name="available_balance" type="number" step="0.01" min="0" />
+          </div>
+
+          <div class="grid-span-full">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="2" placeholder="Any notes for this card"></textarea>
+          </div>
+
+          <div class="grid-span-full">
+            <button class="btn btn-primary w-full" id="cardSubmitBtn" type="submit">Add Card</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/cards.js?v=card-chat-2"></script>
+{% endblock %}

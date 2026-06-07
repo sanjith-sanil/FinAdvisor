@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container analysis-page">
+
+  <div class="analysis-header-row">
+    <div class="section-title">
+      <i data-lucide="bar-chart-3"></i>
+      Financial Analysis
+    </div>
+    <div class="analysis-period-selector">
+      <button class="btn btn-pill active" data-period="this_month" type="button">This Month</button>
+      <button class="btn btn-pill" data-period="last_month" type="button">Last Month</button>
+      <button class="btn btn-pill" data-period="3_months" type="button">3 Months</button>
+      <button class="btn btn-pill" data-period="6_months" type="button">6 Months</button>
+    </div>
+  </div>
+
+  <div class="analysis-tabs glass-card">
+    <button class="analysis-tab active" data-tab="spending" type="button">
+      <i data-lucide="pie-chart"></i>
+      Spending Breakdown
+    </button>
+  </div>
+
+  <div class="analysis-tab-panel active" id="tab-spending">
+    <div class="grid grid-4 analysis-summary-grid">
+      <div class="glass-card summary-card">
+        <div class="summary-icon warning"><i data-lucide="shopping-bag"></i></div>
+        <div class="summary-value" id="spend-total">Rs0</div>
+        <div class="summary-label">Total Spent</div>
+      </div>
+      <div class="glass-card summary-card">
+        <div class="summary-icon success"><i data-lucide="trending-down"></i></div>
+        <div class="summary-value" id="spend-vs-last">0%</div>
+        <div class="summary-label">vs Last Month</div>
+      </div>
+      <div class="glass-card summary-card">
+        <div class="summary-icon primary"><i data-lucide="calendar"></i></div>
+        <div class="summary-value" id="spend-daily-avg">Rs0</div>
+        <div class="summary-label">Daily Average</div>
+      </div>
+      <div class="glass-card summary-card">
+        <div class="summary-icon secondary"><i data-lucide="zap"></i></div>
+        <div class="summary-value" id="spend-top-category">-</div>
+        <div class="summary-label">Top Category</div>
+      </div>
+    </div>
+
+    <div class="analysis-chart-grid">
+      <div class="glass-card chart-card">
+        <div class="section-title">
+          <i data-lucide="pie-chart"></i>
+          Category Breakdown
+        </div>
+        <div class="category-chart-wrap">
+          <canvas id="analysisDonutChart" class="category-chart"></canvas>
+        </div>
+        <div class="legend-grid" id="analysisDonutLegend"></div>
+      </div>
+
+      <div class="glass-card chart-card">
+        <div class="section-title">
+          <i data-lucide="bar-chart-2"></i>
+          Spending by Day of Week
+        </div>
+        <div class="analysis-fixed-height">
+          <canvas id="analysisDayChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis-chart-grid">
+      <div class="glass-card chart-card">
+        <div class="section-title">
+          <i data-lucide="trending-up"></i>
+          6-Month Spending Trend
+        </div>
+        <div class="analysis-fixed-height">
+          <canvas id="monthlyTrendChart"></canvas>
+        </div>
+      </div>
+      <div class="glass-card chart-card">
+        <div class="section-title">
+          <i data-lucide="activity"></i>
+          Daily Spending This Month
+        </div>
+        <div class="analysis-fixed-height">
+          <canvas id="dailyTrendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card analysis-table-card">
+      <div class="section-title analysis-section-title-row">
+        <i data-lucide="list"></i>
+        Category Details
+      </div>
+      <table class="transactions-table" id="categoryDetailTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Transactions</th>
+            <th>Total Spent</th>
+            <th>% of Total</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="categoryDetailBody">
+          <tr>
+            <td colspan="5" class="analysis-placeholder-cell">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="smart-rec-banner glass-card">
+    <div class="smart-rec-left">
+      <div class="smart-rec-icon"><i data-lucide="zap"></i></div>
+      <div>
+        <div class="smart-rec-title">Smart Recommendations</div>
+        <div class="smart-rec-sub">Get personalized insights based on your spending patterns and card usage</div>
+      </div>
+    </div>
+    <a href="/recommendations" class="btn btn-primary smart-rec-btn">
+      <i data-lucide="arrow-right"></i>
+      View All Recommendations
+    </a>
+  </div>
+
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/analysis.js?v=20260426-2"></script>
+{% endblock %}

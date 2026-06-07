@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container rec-page">
+
+  <div class="rec-page-header">
+    <a href="/analysis" class="back-link">
+      <i data-lucide="arrow-left"></i>
+      Back to Analysis
+    </a>
+    <div class="rec-page-title">
+      <i data-lucide="zap" class="rec-title-icon"></i>
+      Smart Recommendations
+    </div>
+    <div class="rec-page-sub">Personalized insights to improve your financial health</div>
+  </div>
+
+  <div class="glass-card rec-score-card">
+    <div class="rec-score-left">
+      <div class="rec-score-circle" id="recScoreCircle">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#F1F5F9" stroke-width="8"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="url(#scoreGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="50.24" id="scoreCircleFill" transform="rotate(-90 50 50)"/>
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#10B981"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="rec-score-inner">
+          <span class="rec-score-num" id="recScoreNum">80</span>
+          <span class="rec-score-total">/100</span>
+        </div>
+      </div>
+      <div>
+        <div class="rec-score-label" id="recScoreLabel">Good</div>
+        <div class="rec-score-sub">Financial Health Score</div>
+        <div class="rec-score-hint">Based on your card usage, payments and spending patterns</div>
+      </div>
+    </div>
+    <div class="rec-score-factors" id="recScoreFactors"></div>
+  </div>
+
+  <div class="rec-filter-row">
+    <button class="rec-filter-btn active" data-filter="all" type="button">All <span class="rec-count" id="count-all">0</span></button>
+    <button class="rec-filter-btn" data-filter="high" type="button"><span class="rec-dot-high">●</span> High Impact <span class="rec-count" id="count-high">0</span></button>
+    <button class="rec-filter-btn" data-filter="medium" type="button"><span class="rec-dot-medium">●</span> Medium Impact <span class="rec-count" id="count-medium">0</span></button>
+    <button class="rec-filter-btn" data-filter="low" type="button"><span class="rec-dot-low">●</span> Low Impact <span class="rec-count" id="count-low">0</span></button>
+  </div>
+
+  <div id="recsList"></div>
+
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/recommendations.js"></script>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container history-page">
+  <div class="history-header-row">
+    <div class="section-title"><i data-lucide="history"></i>Transaction History</div>
+    <div class="history-header-actions">
+      <button class="btn btn-secondary" id="exportCsv">Export CSV</button>
+      <button class="btn btn-primary" id="addTransaction">Add Transaction</button>
+    </div>
+  </div>
+
+  <div class="collection-status-bar">
+    <div class="status-left">
+      <span class="pulse-dot" id="emailDot"></span>
+      <span id="emailStatus">Email: Checking...</span>
+      <span class="status-divider">|</span>
+      <span class="pulse-dot" id="smsDot"></span>
+      <span id="smsStatus">SMS: Waiting...</span>
+    </div>
+    <div class="status-center" id="lastChecked">Last checked: just now</div>
+    <div class="status-right">
+      <button class="btn-check-now" id="checkEmailNow" type="button">Check Now</button>
+      <a href="/profile#auto-collection" class="setup-link">Setup -></a>
+    </div>
+  </div>
+
+  <div class="glass-card history-filter-grid">
+    <input type="date" id="dateFrom" title="Filter transactions from date" />
+    <input type="date" id="dateTo" title="Filter transactions to date" />
+    <select id="cardFilter" title="Filter by card">
+      <option value="">All Cards</option>
+    </select>
+    <select id="typeFilter" title="Filter by transaction type">
+      <option value="">All</option>
+      <option value="debit">Debit</option>
+      <option value="credit">Credit</option>
+    </select>
+    <select id="categoryFilter" title="Filter by category">
+      <option value="">All Categories</option>
+      <option value="Food & Dining">Food & Dining</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Fuel">Fuel</option>
+      <option value="Travel">Travel</option>
+      <option value="Utilities">Utilities</option>
+      <option value="Entertainment">Entertainment</option>
+      <option value="Healthcare">Healthcare</option>
+      <option value="Other">Other</option>
+    </select>
+    <select id="sourceFilter" title="Filter by source">
+      <option value="">All Sources</option>
+      <option value="sms">SMS</option>
+      <option value="email">Email</option>
+      <option value="pdf_upload">PDF</option>
+      <option value="manual">Manual</option>
+    </select>
+    <select id="bankFilter" title="Filter by bank">
+      <option value="">All Banks</option>
+      <option value="HDFC">HDFC Bank</option>
+      <option value="SBI">State Bank of India</option>
+      <option value="ICICI">ICICI Bank</option>
+      <option value="AXIS">Axis Bank</option>
+      <option value="KOTAK">Kotak Mahindra Bank</option>
+      <option value="YES">Yes Bank</option>
+      <option value="INDUSIND">IndusInd Bank</option>
+      <option value="IDFC">IDFC First Bank</option>
+      <option value="PNB">Punjab National Bank</option>
+      <option value="BOI">Bank of India</option>
+      <option value="BOB">Bank of Baroda</option>
+      <option value="OTHER">Other Banks</option>
+    </select>
+    <input type="text" id="searchBox" placeholder="Merchant or description" />
+    <button class="btn btn-primary" id="applyFilters">Apply Filters</button>
+  </div>
+
+  <div class="glass-card collapsible history-collapsible">
+    <div class="collapsible-header">
+      <div class="section-title"><i data-lucide="message-circle"></i>Add Transaction from SMS/Email</div>
+      <i class="chevron" data-lucide="chevron-down"></i>
+    </div>
+    <div class="collapsible-body">
+      <div class="sms-collector-body">
+        <textarea
+          id="smsRaw"
+          placeholder="Paste bank SMS text here...
+Example: Your HDFC Bank A/C XX1234 has been debited for Rs.1,500.00 on 19-Apr-25. Info: Swiggy. Avl Bal: Rs.45,230.00"
+          class="sms-raw-input"
+        ></textarea>
+        <div class="sms-collector-row">
+          <input type="text" id="smsSender" placeholder="e.g. BK-HDFC" />
+          <input type="datetime-local" id="smsReceived" title="SMS received date and time" />
+          <button class="btn btn-primary" id="parseSms">Parse & Save</button>
+        </div>
+        <div id="smsPreview" class="glass-card sms-preview-panel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card transactions-wrap">
+    <div id="transactionsEmpty" class="empty-state transactions-empty">
+      <i data-lucide="inbox" class="transactions-empty-icon"></i>
+      <div class="transactions-empty-title">No transactions yet</div>
+      <div class="transactions-empty-sub">Add transactions via SMS, PDF upload, or manually</div>
+    </div>
+    <table class="transactions-table" id="transactionsTable"></table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/history.js"></script>
+{% endblock %}

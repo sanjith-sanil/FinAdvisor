@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinAdvisor | Register</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-container">
+      <section class="auth-left">
+        <div class="auth-brand">
+          <span class="auth-logo">
+            <i data-lucide="credit-card"></i>
+          </span>
+          <span class="auth-brand-text">FinAdvisor</span>
+        </div>
+
+        <h1 class="auth-title" style="font-size: 26px;">Create your account</h1>
+        <p class="auth-subtitle">Auto-collect transactions from day one with email + SMS setup.</p>
+
+        <div class="auth-steps">
+          <div class="auth-step-badge active" data-step-badge="1">1</div>
+          <div class="auth-step-line"></div>
+          <div class="auth-step-badge" data-step-badge="2">2</div>
+          <div class="auth-step-line"></div>
+          <div class="auth-step-badge" data-step-badge="3">3</div>
+          <div class="auth-step-line"></div>
+          <div class="auth-step-badge" data-step-badge="4">4</div>
+        </div>
+
+        <form id="registerForm">
+          <div class="auth-step active" data-step="1">
+            <label class="auth-label" for="full_name">Full Name</label>
+            <div class="auth-input-wrapper">
+              <i data-lucide="user" class="auth-input-icon"></i>
+              <input class="auth-input" id="full_name" type="text" placeholder="Full Name" required />
+            </div>
+
+            <label class="auth-label" for="email">Email Address</label>
+            <div class="auth-input-wrapper">
+              <i data-lucide="mail" class="auth-input-icon"></i>
+              <input class="auth-input" id="email" type="email" placeholder="you@email.com" required />
+            </div>
+
+            <label class="auth-label" for="phone_number">Phone Number</label>
+            <div class="auth-phone-row">
+              <div class="auth-phone-prefix">+91</div>
+              <input class="auth-input" id="phone_number" type="tel" placeholder="98765 43210" required />
+            </div>
+
+            <label class="auth-label" for="password">Password</label>
+            <div class="auth-input-wrapper">
+              <i data-lucide="lock" class="auth-input-icon"></i>
+              <input class="auth-input" id="password" type="password" placeholder="Create a password" minlength="8" required />
+              <button class="toggle-password" type="button">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+
+            <label class="auth-label" for="confirm_password">Confirm Password</label>
+            <div class="auth-input-wrapper">
+              <i data-lucide="shield" class="auth-input-icon"></i>
+              <input class="auth-input" id="confirm_password" type="password" placeholder="Re-enter password" minlength="8" required />
+              <span id="match-indicator" class="match-indicator"></span>
+            </div>
+
+            <label class="auth-check auth-terms">
+              <input id="terms" type="checkbox" />
+              <span>
+                I agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>
+              </span>
+            </label>
+
+            <button class="auth-btn-primary" id="continueToEmail" type="button">Continue -></button>
+          </div>
+
+          <div class="auth-step" data-step="2">
+            <div class="step-title">Connect Your Email</div>
+            <div class="step-subtitle">So we can auto-detect bank transactions from emails</div>
+            <div class="step-pill">Using <span id="selectedEmail">you@email.com</span></div>
+
+            <div class="option-grid">
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gmail_48dp.png" alt="Gmail" />
+                    Connect with Google
+                  </div>
+                  <span class="option-badge">Recommended</span>
+                </div>
+                <div class="option-sub">No password needed. Secure OAuth login.</div>
+                <button class="btn btn-primary" id="connectGmailBtn" type="button">Connect Gmail -></button>
+              </div>
+
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">
+                    <i data-lucide="mail"></i>
+                    Use App Password
+                  </div>
+                </div>
+                <div class="option-sub">For Gmail, Outlook, or Yahoo Mail</div>
+                <div class="auth-input-wrapper">
+                  <i data-lucide="key" class="auth-input-icon"></i>
+                  <input class="auth-input" id="imapPassword" type="password" placeholder="Email App Password" />
+                  <button class="toggle-password" type="button" data-target="imapPassword">
+                    <i data-lucide="eye"></i>
+                  </button>
+                </div>
+                <button class="btn btn-secondary" id="imapHelpBtn" type="button">How to get App Password?</button>
+                <button class="btn btn-outline" id="testImapBtn" type="button">Test & Connect</button>
+              </div>
+
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">
+                    <i data-lucide="clock"></i>
+                    Set up later
+                  </div>
+                </div>
+                <div class="option-sub">You can connect email from Profile settings</div>
+                <button class="btn btn-secondary" id="skipEmailBtn" type="button">Skip -></button>
+              </div>
+            </div>
+
+            <button class="btn btn-outline" id="backToStep1" type="button">Back</button>
+          </div>
+
+          <div class="auth-step" data-step="3">
+            <div class="step-title">Set Up SMS Auto-Collection</div>
+            <div class="step-subtitle">Auto-detect transactions from bank SMS alerts</div>
+
+            <div class="option-grid grid-2">
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title"><i data-lucide="smartphone"></i>Android Auto-Forward</div>
+                  <span class="option-badge">Recommended</span>
+                </div>
+                <ol class="step-list">
+                  <li>Download SMS Forwarder app</li>
+                  <li>Use your webhook details</li>
+                  <li>Set filter keywords</li>
+                </ol>
+                <a class="btn btn-outline" id="smsAppLink" href="#" target="_blank">Open Play Store</a>
+                <div class="setup-box">
+                  <label>Webhook URL</label>
+                  <div class="copy-row">
+                    <input id="smsWebhookUrl" readonly />
+                    <button class="btn btn-secondary" id="copyWebhookBtn" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-box">
+                  <label>API Key</label>
+                  <div class="copy-row">
+                    <input id="smsApiKey" readonly />
+                    <button class="btn btn-secondary" id="copyApiKeyBtn" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-box">
+                  <label>User ID</label>
+                  <div class="copy-row">
+                    <input id="smsUserId" readonly />
+                    <button class="btn btn-secondary" id="copyUserIdBtn" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-tags" id="smsFilterTags"></div>
+                <button class="btn btn-primary" id="markSmsConfigured" type="button">I've set it up</button>
+              </div>
+
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title"><i data-lucide="clipboard"></i>Manual Paste (Backup)</div>
+                </div>
+                <div class="option-sub">Already working in History page. Use anytime.</div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="completeSetupBtn" type="button">Complete Setup -></button>
+            <button class="btn btn-link" id="skipSmsBtn" type="button">Skip SMS setup -></button>
+          </div>
+
+          <div class="auth-step" data-step="4">
+            <div class="success-icon"><i data-lucide="check-circle"></i></div>
+            <div class="step-title">You're all set, <span id="firstName">there</span>!</div>
+            <div class="success-grid">
+              <div class="success-card" id="emailStatusCard">Email: Pending setup</div>
+              <div class="success-card" id="smsStatusCard">SMS: Manual only</div>
+            </div>
+            <div class="customer-id">Your Customer ID: <span id="customerIdLabel">CUST00000000</span></div>
+            <button class="btn btn-secondary" id="copyCustomerBtn" type="button">Copy Customer ID</button>
+            <button class="btn btn-primary" id="goDashboardBtn" type="button">Go to Dashboard -></button>
+          </div>
+        </form>
+
+        <div class="auth-bottom">
+          Already a member? <a href="/login">Sign in</a>
+        </div>
+      </section>
+
+      <aside class="auth-right">
+        <div class="auth-circle large"></div>
+        <div class="auth-circle medium"></div>
+
+        <div class="floating-card card-daily">
+          <div class="floating-label">Cards Tracked</div>
+          <div class="floating-value">12</div>
+          <div class="floating-bar"></div>
+        </div>
+
+        <div class="floating-pill pill-sync">
+          <i data-lucide="lock"></i>
+          Secured
+        </div>
+
+        <div class="floating-pill pill-alerts">
+          <i data-lucide="trending-up"></i>
+          Insights
+        </div>
+
+        <div class="floating-card card-data">
+          <i data-lucide="shield" class="floating-icon"></i>
+          <div class="floating-title">Your data, your rules</div>
+          <div class="floating-sub">You control visibility and privacy preferences.</div>
+        </div>
+
+        <div class="floating-pill pill-reports">
+          <i data-lucide="eye-off"></i>
+          Private
+        </div>
+      </aside>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="/static/js/auth.js"></script>
+  </body>
+</html>

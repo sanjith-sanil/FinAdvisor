@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container">
+  <div class="hero">
+    <div>
+      <span class="hero-badge">Advisory Platform</span>
+      <h1>Your Complete Credit Card Intelligence Platform</h1>
+      <p>
+        Track every transaction, analyze spending, and optimize EMI outflows with
+        a unified dashboard built for modern personal finance.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/dashboard">View Dashboard</a>
+        <a class="btn btn-outline" href="/cards">Add Your Cards</a>
+      </div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="mockup-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 12px; font-weight: 600; color: var(--neutral-900);">Financial Overview</span>
+          <span style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%;"></span>
+        </div>
+        <div id="homeOverviewAmount" style="font-size: 20px; font-weight: 700; color: var(--neutral-900);">—</div>
+        <div style="font-size: 11px; color: var(--neutral-600); margin-bottom: 12px;">Total Available Credit</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #b45309;">Used: <span id="homeUsedPct">—</span></span>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #047857;">Available: <span id="homeAvailPct">—</span></span>
+          <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #1d4ed8;">Cards: <span id="homeCardCount">—</span></span>
+        </div>
+        <div style="height: 6px; border-radius: 6px; background: var(--neutral-100); overflow: hidden; margin-bottom: 12px;">
+          <div id="homeUsageBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #2563eb, #7c3aed); transition: width 0.6s ease;"></div>
+        </div>
+        <div id="homeTransactionsList" style="font-size: 11px;">
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">
+            <span>Swiggy</span>
+            <span style="color: var(--danger);">-₹450</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f5f9;">
+            <span>Amazon</span>
+            <span style="color: var(--danger);">-₹1,299</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+            <span>Salary</span>
+            <span style="color: var(--success);">+₹55,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-title">Everything you need</div>
+  <div class="grid grid-3">
+    {% for feature in [
+      {"icon": "message-circle", "title": "Smart SMS Parsing", "desc": "Auto-detect transactions from bank alerts."},
+      {"icon": "file-text", "title": "PDF Statement Import", "desc": "Upload and parse bank statements in minutes."},
+      {"icon": "layout-dashboard", "title": "360-degree Dashboard", "desc": "All metrics and KPIs in one place."},
+      {"icon": "credit-card", "title": "EMI Intelligence", "desc": "Track tenure, interest, and monthly outflows."},
+      {"icon": "trending-up", "title": "Credit Score Tips", "desc": "Actionable guidance to improve CIBIL scores."},
+      {"icon": "building-2", "title": "Multi-Bank Support", "desc": "Manage HDFC, SBI, ICICI, and more."}
+    ] %}
+    <div class="feature-card glass-card">
+      <div class="feature-icon">
+        <i data-lucide="{{ feature.icon }}"></i>
+      </div>
+      <h4>{{ feature.title }}</h4>
+      <p>{{ feature.desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><i data-lucide="layers"></i>Track Multiple Cards</div>
+    <span class="stat-divider"></span>
+    <div class="stat-item"><i data-lucide="shield"></i>Zero Payment Processing</div>
+    <span class="stat-divider"></span>
+    <div class="stat-item"><i data-lucide="lock"></i>DPDP 2023 Compliant</div>
+    <span class="stat-divider"></span>
+    <div class="stat-item"><i data-lucide="sparkles"></i>Bank-Grade Security</div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="nav-left" style="margin-bottom: 8px;">
+          <i data-lucide="credit-card"></i>
+          <span>FinAdvisor</span>
+        </div>
+        <p class="footer-link">Advisory-only insights for smarter card decisions.</p>
+      </div>
+      <div>
+        <div class="footer-title">Features</div>
+        <a class="footer-link" href="/dashboard">Smart Analytics</a>
+        <a class="footer-link" href="/history">Transaction History</a>
+        <a class="footer-link" href="/cards">Multi-Card Support</a>
+      </div>
+      <div>
+        <div class="footer-title">Compliance</div>
+        <a class="footer-link" href="#">Privacy Policy</a>
+        <a class="footer-link" href="#">DPDP 2023</a>
+        <a class="footer-link" href="#">Security</a>
+      </div>
+      <div>
+        <div class="footer-title">Support</div>
+        <a class="footer-link" href="mailto:support@finadvisor.app">support@finadvisor.app</a>
+        <a class="footer-link" href="tel:+919876543210">+91 98765 43210</a>
+        <a class="footer-link" href="#">Help Center</a>
+      </div>
+      <div class="footer-social-col">
+        <div class="footer-title">Social</div>
+        <div class="footer-social-row">
+          <a class="footer-link footer-social footer-social-icon" href="#" aria-label="Instagram">
+            <i data-lucide="instagram"></i>
+          </a>
+          <a class="footer-link footer-social footer-social-icon" href="#" aria-label="GitHub">
+            <i data-lucide="github"></i>
+          </a>
+          <a class="footer-link footer-social footer-social-icon" href="#" aria-label="Facebook">
+            <i data-lucide="facebook"></i>
+          </a>
+          <a class="footer-link footer-social footer-social-icon" href="#" aria-label="Twitter">
+            <i data-lucide="twitter"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-divider"></div>
+    <div class="footer-bottom">
+      <span>© 2026 FinAdvisor. All rights reserved.</span>
+      <span>Advisory-only. Not SEBI registered. Not a payment aggregator.</span>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.lucide) lucide.createIcons();
+
+    const userId = localStorage.getItem("finadvisor_user_id");
+    if (!userId) return;
+
+    fetch(`/api/v1/cards?user_id=${userId}`)
+      .then((r) => r.json())
+      .then((cards) => {
+        if (!Array.isArray(cards) || cards.length === 0) return;
+
+        const activeCards = cards.filter((c) => c.is_active !== false);
+        const count = activeCards.length;
+
+        let totalLimit = 0;
+        let totalUsed = 0;
+
+        activeCards.forEach((c) => {
+          const lim = parseFloat(c.credit_limit) || 0;
+          // current_balance = amount spent/outstanding; available = limit - used
+          const used = parseFloat(c.current_balance) || 0;
+          totalLimit += lim;
+          totalUsed += used;
+        });
+
+        const totalAvailable = Math.max(0, totalLimit - totalUsed);
+        const usedPct = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
+        const availPct = 100 - usedPct;
+
+        const fmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+
+        const amountEl = document.getElementById("homeOverviewAmount");
+        const usedEl   = document.getElementById("homeUsedPct");
+        const availEl  = document.getElementById("homeAvailPct");
+        const countEl  = document.getElementById("homeCardCount");
+        const barEl    = document.getElementById("homeUsageBar");
+
+        if (amountEl) amountEl.textContent = fmt(totalAvailable);
+        if (usedEl)   usedEl.textContent   = usedPct + "%";
+        if (availEl)  availEl.textContent  = availPct + "%";
+        if (countEl)  countEl.textContent  = count;
+        if (barEl)    barEl.style.width    = usedPct + "%";
+      })
+      .catch(() => {});
+
+    fetch(`/api/v1/transactions?user_id=${userId}&limit=3`)
+      .then((r) => r.json())
+      .then((transactions) => {
+        if (!Array.isArray(transactions) || transactions.length === 0) return;
+        const listEl = document.getElementById("homeTransactionsList");
+        if (!listEl) return;
+
+        listEl.innerHTML = "";
+        transactions.forEach((t, index) => {
+          const isLast = index === transactions.length - 1;
+          const borderStyle = isLast ? "" : "border-bottom: 1px solid #f1f5f9;";
+          const isDebit = t.transaction_type === "debit";
+          const sign = isDebit ? "-" : "+";
+          const color = isDebit ? "var(--danger)" : "var(--success)";
+          
+          const name = t.merchant_name || t.description || "Transaction";
+          const formattedAmount = sign + "₹" + Math.round(t.amount).toLocaleString("en-IN");
+
+          const row = document.createElement("div");
+          row.style = `display: flex; justify-content: space-between; padding: 4px 0; ${borderStyle}`;
+          
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = name;
+          
+          const amountSpan = document.createElement("span");
+          amountSpan.style.color = color;
+          amountSpan.textContent = formattedAmount;
+
+          row.appendChild(nameSpan);
+          row.appendChild(amountSpan);
+          listEl.appendChild(row);
+        });
+      })
+      .catch(() => {});
+  });
+</script>
+{% endblock %}

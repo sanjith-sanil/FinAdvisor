@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinAdvisor</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-left">
+        <i data-lucide="credit-card"></i>
+        <span>FinAdvisor</span>
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a class="nav-link" href="/home">Home</a>
+        <a class="nav-link" href="/cards">My Cards</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/analysis">Analysis</a>
+        <a class="nav-link" href="/history">History</a>
+      </div>
+      <div class="nav-right">
+        <button class="btn btn-secondary hidden" id="mobileMenuButton" aria-label="Open menu" title="Open menu">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="customer-pill" id="customerId">CUST00000000</div>
+        <a class="avatar" id="avatar" href="/profile" aria-label="Open profile">FN</a>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <div id="chatbotBtn" onclick="openChatbot()" aria-label="Open AI Assistant" role="button" tabindex="0">
+      <i data-lucide="message-circle"></i>
+      <span class="chatbot-badge" id="chatBadge">1</span>
+    </div>
+
+    <div id="chatbotPopup">
+      <div class="chatbot-header">
+        <div class="chatbot-header-avatar">
+          <i data-lucide="bot"></i>
+        </div>
+        <div class="chatbot-header-copy">
+          <div class="chatbot-header-title">FinAdvisor AI</div>
+          <div class="chatbot-header-subtitle">Powered by your financial data</div>
+        </div>
+        <button class="chatbot-close" type="button" onclick="openChatbot()" aria-label="Close chatbot">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div id="chatMessages" class="chatbot-messages"></div>
+
+      <div class="chatbot-input-wrap">
+        <input id="chatInput" type="text" placeholder="Ask me anything..." />
+        <button id="chatSendBtn" type="button" aria-label="Send message">
+          <i data-lucide="send"></i>
+        </button>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/chatbot.js"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

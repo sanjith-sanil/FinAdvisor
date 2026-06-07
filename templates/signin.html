@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinAdvisor | Sign In</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-shell">
+      <section class="auth-left">
+        <div class="auth-top">
+          <a class="auth-back" href="/"><i data-lucide="arrow-left"></i></a>
+        </div>
+        <div class="auth-card">
+          <div class="auth-brand">
+            <span class="auth-logo"></span>
+            <span>FinAdvisor</span>
+          </div>
+          <h1>Welcome back</h1>
+          <p class="auth-subtle">Securely access your financial workspace and insights.</p>
+
+          <form class="auth-form">
+            <label>Email address</label>
+            <div class="auth-field">
+              <i data-lucide="mail"></i>
+              <input type="email" placeholder="you@email.com" required />
+            </div>
+
+            <label>Password</label>
+            <div class="auth-field">
+              <i data-lucide="lock"></i>
+              <input type="password" placeholder="••••••••" required />
+              <button class="auth-eye" type="button"><i data-lucide="eye"></i></button>
+            </div>
+
+            <div class="auth-row">
+              <label class="auth-check">
+                <input type="checkbox" />
+                <span>Keep me signed in</span>
+              </label>
+              <a class="auth-link" href="#">Forgot password?</a>
+            </div>
+
+            <button class="btn btn-primary auth-submit" type="submit">Sign In</button>
+
+            <div class="auth-divider">
+              <span>or continue with</span>
+            </div>
+            <div class="auth-social">
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="chrome"></i>
+                Google
+              </button>
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="apple"></i>
+                Apple
+              </button>
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="github"></i>
+                GitHub
+              </button>
+            </div>
+
+            <div class="auth-bottom">
+              New here? <a href="/signup">Create account</a>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside class="auth-right">
+        <div class="auth-art">
+          <div class="auth-orbit"></div>
+          <div class="auth-card-mini">
+            <div class="mini-title">Daily spend</div>
+            <div class="mini-value">₹1,248</div>
+            <div class="mini-wave"></div>
+          </div>
+          <div class="auth-card-wide">
+            <div class="mini-title">Your data, your rules</div>
+            <div class="mini-sub">Encrypted storage aligned with DPDP 2023.</div>
+          </div>
+          <div class="auth-bubble top">Sync</div>
+          <div class="auth-bubble mid">Alerts</div>
+          <div class="auth-bubble bottom">Reports</div>
+        </div>
+      </aside>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+      if (window.lucide) lucide.createIcons();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="container profile-page">
+  <div class="profile-layout">
+    <aside class="glass-card profile-rail">
+      <div class="profile-avatar">
+        FN
+        <div class="avatar-overlay"><i data-lucide="camera"></i></div>
+      </div>
+      <div class="profile-name" id="profileName">Full Name</div>
+      <div class="profile-badges">
+        <span class="profile-chip">Prime Member</span>
+        <span class="profile-chip soft">KYC Verified</span>
+      </div>
+      <div id="profileCustomer" class="customer-pill" title="Click to copy">CUST00000000</div>
+      <div class="profile-sub" id="memberSince">Member since</div>
+      <div class="profile-divider"></div>
+      <div class="profile-stats">
+        <div>
+          <div class="profile-stat" id="cardCount">0</div>
+          <div class="profile-stat-label">Cards</div>
+        </div>
+        <div>
+          <div class="profile-stat" id="transactionCount">0</div>
+          <div class="profile-stat-label">Transactions</div>
+        </div>
+        <div>
+          <div class="profile-stat">Today</div>
+          <div class="profile-stat-label">Active</div>
+        </div>
+      </div>
+      <div class="profile-divider"></div>
+      <div class="profile-quick">
+        <button class="btn btn-primary" id="viewInsightsBtn" type="button">View Insights</button>
+        <button class="btn btn-secondary" id="editAvatarBtn" type="button">Edit Avatar</button>
+        <button class="btn logout-btn" id="logoutBtn" type="button">Log out</button>
+      </div>
+    </aside>
+
+    <div class="profile-main">
+      <div class="profile-top">
+        <div class="glass-card profile-hero">
+          <div>
+            <div class="profile-hero-title">Account Overview</div>
+            <div class="profile-hero-sub">Track your identity, security, and communication preferences in one place.</div>
+          </div>
+          <div class="profile-hero-metrics">
+            <div>
+              <div class="profile-hero-value">98%</div>
+              <div class="profile-hero-label">Profile completion</div>
+            </div>
+            <div>
+              <div class="profile-hero-value">3</div>
+              <div class="profile-hero-label">Linked banks</div>
+            </div>
+            <div>
+              <div class="profile-hero-value">12h</div>
+              <div class="profile-hero-label">Last sync</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card profile-timeline">
+          <div class="profile-timeline-header">
+            <div>
+              <div class="profile-timeline-title">Activity Timeline</div>
+              <div class="profile-timeline-sub">Latest actions across your account</div>
+            </div>
+            <span class="profile-chip">Live</span>
+          </div>
+          <div class="timeline-list">
+            <div class="timeline-item">
+              <span class="timeline-dot success"></span>
+              <div>
+                <div class="timeline-title">SMS parsing enabled</div>
+                <div class="timeline-meta">2 hours ago · System</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <span class="timeline-dot primary"></span>
+              <div>
+                <div class="timeline-title">ICICI account linked</div>
+                <div class="timeline-meta">Yesterday · Accounts</div>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <span class="timeline-dot warning"></span>
+              <div>
+                <div class="timeline-title">Password updated</div>
+                <div class="timeline-meta">3 days ago · Security</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tabs">
+        <div class="profile-tab active" data-tab="personal">Personal Details</div>
+        <div class="profile-tab" data-tab="accounts">Bank Accounts</div>
+        <div class="profile-tab" data-tab="security">Security & Privacy</div>
+        <div class="profile-tab" data-tab="auto-collection">Auto-Collection</div>
+      </div>
+
+      <div class="glass-card profile-panel">
+        <div id="personalTab">
+          <form class="grid grid-2" id="profileForm">
+            <div>
+              <label>Full Name</label>
+              <input name="full_name" placeholder="Full Name" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input name="email" placeholder="Email" />
+            </div>
+            <div>
+              <label>Phone</label>
+              <input name="phone_number" placeholder="Phone" />
+            </div>
+            <div>
+              <label>Date of Birth</label>
+              <input name="date_of_birth" type="date" title="Date of birth" />
+            </div>
+            <div class="profile-span-2">
+              <label>Address</label>
+              <textarea name="address" placeholder="Address"></textarea>
+            </div>
+            <div class="profile-actions">
+              <button class="btn btn-secondary" type="button">Reset</button>
+              <button class="btn btn-primary" type="submit">Save Changes</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="accountsTab" class="profile-tab-panel">
+          <div class="profile-row">
+            <div class="section-title">Bank Accounts</div>
+            <button class="btn btn-outline">+ Add Account</button>
+          </div>
+          <div id="bankAccounts" class="profile-list"></div>
+          <div class="glass-card profile-nested">
+            <form id="bankAccountForm" class="grid grid-2">
+              <div>
+                <label>Bank Name</label>
+                <input name="bank_name" placeholder="Bank Name" />
+              </div>
+              <div>
+                <label>Account Type</label>
+                <select name="account_type" title="Account type">
+                  <option value="savings">Savings</option>
+                  <option value="current">Current</option>
+                  <option value="salary">Salary</option>
+                </select>
+              </div>
+              <div>
+                <label>Last 4 digits</label>
+                <input name="account_number_last4" placeholder="Last 4 digits" />
+              </div>
+              <div>
+                <label>Current Balance</label>
+                <input name="current_balance" placeholder="Current Balance" />
+              </div>
+              <div class="profile-actions">
+                <button class="btn btn-secondary" type="button">Cancel</button>
+                <button class="btn btn-primary" type="submit">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div id="securityTab" class="profile-tab-panel">
+          <div class="glass-card profile-nested profile-nested-spacing">
+            <div class="section-title">Change Password</div>
+            <div class="grid grid-2">
+              <div>
+                <label>Current Password</label>
+                <input type="password" placeholder="Current" />
+              </div>
+              <div>
+                <label>New Password</label>
+                <input type="password" placeholder="New" />
+              </div>
+              <div>
+                <label>Confirm Password</label>
+                <input type="password" placeholder="Confirm" />
+              </div>
+            </div>
+            <button class="btn btn-outline profile-button-spaced">Update Password</button>
+          </div>
+          <div class="glass-card profile-nested">
+            <div class="section-title">Data & Privacy</div>
+            <div class="profile-row">
+              <div>Download My Data</div>
+              <button class="btn btn-outline">Export CSV</button>
+            </div>
+            <div class="profile-row">
+              <div>Delete Account</div>
+              <button class="btn btn-outline profile-danger-button">Delete</button>
+            </div>
+            <div class="profile-note">
+              <i data-lucide="info"></i>
+              Your data is stored securely per DPDP Act 2023 compliance.
+            </div>
+          </div>
+        </div>
+
+
+        <div id="autoCollectionTab" class="profile-tab-panel">
+          <div class="auto-card">
+            <div class="auto-header">
+              <div class="auto-title"><i data-lucide="mail"></i>Email Auto-Collection</div>
+              <span class="status-pill" id="emailStatusPill">Not Connected</span>
+            </div>
+            <div id="emailSetupOptions" class="auto-grid">
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gmail_48dp.png" alt="Gmail" />
+                    Connect Gmail
+                  </div>
+                  <span class="option-badge">Recommended</span>
+                </div>
+                <div class="option-sub">Most secure. No password needed.</div>
+                <button class="btn btn-primary" id="profileConnectGmail" type="button">Connect with Google</button>
+              </div>
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title"><i data-lucide="lock"></i>App Password</div>
+                </div>
+                <div class="option-sub">Works with Gmail, Outlook, Yahoo</div>
+                <div class="grid grid-2 profile-grid-spaced">
+                  <input id="profileEmail" placeholder="Email" />
+                  <div class="auth-input-wrapper">
+                    <input class="auth-input" id="profileAppPassword" type="password" placeholder="App Password" />
+                    <button class="toggle-password" type="button" data-target="profileAppPassword" title="Toggle password visibility">
+                      <i data-lucide="eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <button class="btn btn-outline" id="profileTestImap" type="button">Test Connection</button>
+                <button class="btn btn-primary" id="profileSaveImap" type="button">Save & Activate</button>
+              </div>
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title"><i data-lucide="clock"></i>Set up later</div>
+                </div>
+                <div class="option-sub">You can enable anytime</div>
+              </div>
+            </div>
+
+            <div class="email-sync-progress glass-card profile-hidden-panel" id="emailSyncProgress">
+              <div class="sync-header">
+                <div class="sync-spinner"></div>
+                <div>
+                  <div class="sync-title">Syncing your bank emails...</div>
+                  <div class="sync-subtitle" id="syncStatusText">Connecting to your inbox...</div>
+                </div>
+              </div>
+
+              <div class="sync-progress-bar">
+                <div class="sync-progress-fill"></div>
+              </div>
+
+              <div class="sync-stats profile-hidden-panel" id="syncStats">
+                <div class="sync-stat">
+                  <span class="sync-stat-num" id="syncEmailsFound">0</span>
+                  <span class="sync-stat-label">Bank Emails Found</span>
+                </div>
+                <div class="sync-stat">
+                  <span class="sync-stat-num" id="syncTxnFound">0</span>
+                  <span class="sync-stat-label">Transactions Saved</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="emailStatusPanel" class="auto-status profile-hidden-panel">
+              <div class="auto-status-row">
+                <div>Email: <span id="emailMasked">-</span></div>
+                <div>Type: <span id="emailAuthType">-</span></div>
+                <div>Last checked: <span id="emailLastChecked">-</span></div>
+              </div>
+              <div class="auto-status-row">
+                <div>Processed: <span id="emailProcessed">0</span></div>
+                <div>Transactions: <span id="emailTransactions">0</span></div>
+              </div>
+              <div id="emailLastError" class="auto-error profile-hidden-panel"></div>
+              <div class="auto-actions">
+                <button class="btn btn-outline" id="emailCheckNow" type="button">Check Now</button>
+                <button class="btn btn-secondary" id="emailToggle" type="button">Disable</button>
+                <button class="btn btn-secondary" id="emailDisconnect" type="button">Disconnect</button>
+              </div>
+              <div class="auto-log" id="emailLog"></div>
+            </div>
+          </div>
+
+          <div class="auto-card">
+            <div class="auto-header">
+              <div class="auto-title"><i data-lucide="smartphone"></i>SMS Auto-Collection</div>
+              <span class="status-pill" id="smsStatusPill">Manual Only</span>
+            </div>
+            <div class="auto-grid grid-2">
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">Android Auto-Forward</div>
+                </div>
+                <div class="setup-box">
+                  <label>Webhook URL</label>
+                  <div class="copy-row">
+                    <input id="profileSmsWebhook" readonly title="Webhook URL" />
+                    <button class="btn btn-secondary" id="copyProfileWebhook" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-box">
+                  <label>Your API Key</label>
+                  <div class="copy-row">
+                    <input id="profileSmsKey" readonly title="API key" />
+                    <button class="btn btn-secondary" id="copyProfileKey" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-box">
+                  <label>User ID</label>
+                  <div class="copy-row">
+                    <input id="profileSmsUser" readonly title="User ID" />
+                    <button class="btn btn-secondary" id="copyProfileUser" type="button">Copy</button>
+                  </div>
+                </div>
+                <div class="setup-tags" id="profileSmsFilters"></div>
+              </div>
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">Manual Paste</div>
+                </div>
+                <textarea id="profileSmsRaw" placeholder="Paste SMS here..." class="profile-sms-raw"></textarea>
+                <button class="btn btn-primary" id="profileParseSms" type="button">Parse</button>
+                <div id="profileSmsPreview" class="glass-card profile-sms-preview"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="auto-card">
+            <div class="auto-header">
+              <div class="auto-title"><i data-lucide="mail-open"></i>Manual Email Paste (Testing)</div>
+              <span class="status-pill info">Test Environment</span>
+            </div>
+            <div class="auto-grid grid-2">
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">Insert Test Email</div>
+                </div>
+                <div class="option-sub" style="margin-bottom: 12px;">Directly feed bank email templates to test transaction and EMI parsing.</div>
+                
+                <div class="grid grid-2" style="gap: 12px; margin-bottom: 12px;">
+                  <div>
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Sender Email</label>
+                    <select id="profileTestEmailSender" title="Sender Email" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; background: white; color: #1e293b;">
+                      <option value="alerts@hdfcbank.net">alerts@hdfcbank.net (HDFC Bank)</option>
+                      <option value="credit.cards@icicibank.com">credit.cards@icicibank.com (ICICI Bank)</option>
+                      <option value="alerts@axisbank.com">alerts@axisbank.com (Axis Bank)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Subject</label>
+                    <input id="profileTestEmailSubject" placeholder="e.g. Smart EMI Loan Summary" value="Smart EMI Loan Summary" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; color: #1e293b;" />
+                  </div>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                  <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Email Body</label>
+                  <textarea id="profileTestEmailBody" placeholder="Paste full email body here..." class="profile-sms-raw" style="min-height: 120px; width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; resize: vertical; color: #1e293b;"></textarea>
+                </div>
+                
+                <button class="btn btn-primary" id="profileParseEmail" type="button" style="width: 100%;">Parse & Ingest</button>
+              </div>
+              
+              <div class="option-card">
+                <div class="option-header">
+                  <div class="option-title">Parsing Output & Guide</div>
+                </div>
+                <div class="option-sub" style="margin-bottom: 12px;">Ensure you have created a active <strong>Credit Card</strong> under your profile matching the bank name and last 4 digits (e.g. ending 5678 or 4321) to match the parsed loan details.</div>
+                <div id="profileEmailPreview" class="glass-card profile-sms-preview" style="min-height: 160px; max-height: 250px; overflow-y: auto; display: none; padding: 12px; font-family: monospace; font-size: 12px; background: rgba(15, 23, 42, 0.05); border-radius: 6px; border: 1px dashed #cbd5e1; white-space: pre-wrap;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="auto-card">
+            <div class="auto-header">
+              <div class="auto-title"><i data-lucide="shield-check"></i>Verified Bank Domains Only</div>
+            </div>
+            <div class="option-sub">Only emails from these official bank domains are accepted. All other emails are ignored.</div>
+            <div class="setup-box">
+              <input id="bankDomainSearch" placeholder="Search banks..." />
+            </div>
+            <div id="bankDomainGroups" class="bank-domain-groups"></div>
+            <div class="bank-domain-stats" id="bankDomainStats">0 verified domains | Last updated: - | Protecting against spam</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/profile.js"></script>
+{% endblock %}

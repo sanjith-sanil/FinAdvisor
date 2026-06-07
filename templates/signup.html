@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FinAdvisor | Sign Up</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-shell">
+      <section class="auth-left">
+        <div class="auth-top">
+          <a class="auth-back" href="/"><i data-lucide="arrow-left"></i></a>
+        </div>
+        <div class="auth-card">
+          <div class="auth-brand">
+            <span class="auth-logo"></span>
+            <span>FinAdvisor</span>
+          </div>
+          <h1>Create your account</h1>
+          <p class="auth-subtle">Start tracking cards, spending, and savings effortlessly.</p>
+
+          <form class="auth-form">
+            <label>Full name</label>
+            <div class="auth-field">
+              <i data-lucide="user"></i>
+              <input type="text" placeholder="Full Name" required />
+            </div>
+
+            <label>Email address</label>
+            <div class="auth-field">
+              <i data-lucide="mail"></i>
+              <input type="email" placeholder="you@email.com" required />
+            </div>
+
+            <label>Password</label>
+            <div class="auth-field">
+              <i data-lucide="lock"></i>
+              <input type="password" placeholder="Create a password" required />
+              <button class="auth-eye" type="button"><i data-lucide="eye"></i></button>
+            </div>
+            <div class="auth-help">Use 8+ characters, 1 number, and 1 symbol.</div>
+
+            <label>Confirm password</label>
+            <div class="auth-field">
+              <i data-lucide="shield"></i>
+              <input type="password" placeholder="Re-enter password" required />
+            </div>
+
+            <label class="auth-check auth-terms">
+              <input type="checkbox" />
+              <span>
+                I agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>
+              </span>
+            </label>
+
+            <button class="btn btn-primary auth-submit" type="submit">Create Account</button>
+
+            <div class="auth-divider">
+              <span>or sign up with</span>
+            </div>
+            <div class="auth-social">
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="chrome"></i>
+                Google
+              </button>
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="apple"></i>
+                Apple
+              </button>
+              <button class="auth-social-btn" type="button">
+                <i data-lucide="github"></i>
+                GitHub
+              </button>
+            </div>
+
+            <div class="auth-bottom">
+              Already a member? <a href="/signin">Sign in</a>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside class="auth-right">
+        <div class="auth-art">
+          <div class="auth-orbit"></div>
+          <div class="auth-card-mini">
+            <div class="mini-title">Inbox</div>
+            <div class="mini-value">176,180</div>
+            <div class="mini-wave"></div>
+          </div>
+          <div class="auth-card-wide">
+            <div class="mini-title">Your data, your rules</div>
+            <div class="mini-sub">You control visibility and privacy preferences.</div>
+          </div>
+          <div class="auth-bubble top">Instagram</div>
+          <div class="auth-bubble mid">TikTok</div>
+          <div class="auth-bubble bottom">LinkedIn</div>
+        </div>
+      </aside>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+      if (window.lucide) lucide.createIcons();
+    </script>
+  </body>
+</html>
