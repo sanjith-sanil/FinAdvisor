@@ -264,7 +264,7 @@ def _parse_format_b(text: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 _CARD_LAST4_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"card\s*(?:ending|no\.?|number|xx+|\*+)\s*[:\-]?\s*(\d{4})", re.IGNORECASE),
+    re.compile(r"card\s*(?:ending|no\.?|number|xx+|\*+)\s*(?:in|with)?\s*[:\-]?\s*(\d{4})", re.IGNORECASE),
     re.compile(r"(?:xx+|\*+)(\d{4})", re.IGNORECASE),
     re.compile(r"credit\s+card\s*[:\-]?\s*(?:xx+|\*+)?(\d{4})", re.IGNORECASE),
 ]

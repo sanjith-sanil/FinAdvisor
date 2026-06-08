@@ -80,3 +80,15 @@ def parse_pdf(file_path: str) -> list[dict]:
                 last_balance = balance
 
     return transactions
+
+
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extract all text from a PDF file."""
+    all_text = []
+    with pdfplumber.open(file_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if text:
+                all_text.append(text)
+    return "\n".join(all_text)
+

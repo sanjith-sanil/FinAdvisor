@@ -14,6 +14,7 @@ from app.services.balance_sync_service import (
     resolve_transaction_accounts,
     sync_balances_for_transaction,
 )
+from app.services.emi_upsert_service import process_emi_from_pdf
 
 router = APIRouter(prefix="/api/v1/pdf", tags=["pdf"])
 
@@ -72,6 +73,15 @@ async def upload_pdf(
                 txn_type=t.transaction_type,
                 operation="insert"
             )
+ 
+    if bank_code:
+        await process_emi_from_pdf(
+            db=db,
+            user_id=user_id,
+            bank_code=bank_code,
+            file_path=file_path,
+            filename=file.filename,
+        )
 
     upload.status = PdfStatus.completed
     upload.total_transactions_parsed = len(transactions)
@@ -136,6 +146,15 @@ async def reparse_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db
                 txn_type=t.transaction_type,
                 operation="insert"
             )
+
+    if bank_code:
+        await process_emi_from_pdf(
+            db=db,
+            user_id=upload.user_id,
+            bank_code=bank_code,
+            file_path=upload.file_path,
+            filename=upload.filename,
+        )
 
     upload.status = PdfStatus.completed
     upload.total_transactions_parsed = len(transactions)

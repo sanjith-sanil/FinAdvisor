@@ -238,3 +238,69 @@ async def process_emi_from_email(
         bank_code,
     )
     return count
+
+
+async def process_emi_from_pdf(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    bank_code: str,
+    file_path: str,
+    filename: str = "",
+) -> int:
+    """Detect, parse, and persist EMI data from a credit card statement PDF.
+
+    Returns the number of EMI records upserted.
+    """
+    from app.services.pdf_parser_service import extract_text_from_pdf
+
+    try:
+        pdf_text = extract_text_from_pdf(file_path)
+    except Exception as e:
+        logger.error("Failed to extract text from PDF statement %s: %s", file_path, e)
+        return 0
+
+    if not pdf_text:
+        return 0
+
+    records = parse_emi_details(pdf_text)
+    if not records:
+        logger.debug("No EMI records parsed from PDF %s", filename)
+        return 0
+
+    card_last4 = extract_card_last4_from_email(pdf_text)
+    card = await _find_card(db, user_id, bank_code, card_last4)
+    if not card:
+        logger.info(
+            "EMI rows found in PDF %s but no matching card for bank_code=%s user=%s last4=%s",
+            filename,
+            bank_code,
+            user_id,
+            card_last4,
+        )
+        return 0
+
+    count = 0
+    raw_snippet = f"PDF statement: {filename}\n{pdf_text[:1800]}"
+    for record in records:
+        await _upsert_emi_record(
+            db,
+            card,
+            user_id,
+            record,
+            source_raw_id=None,
+            raw_snippet=raw_snippet,
+        )
+        count += 1
+
+    if count > 0:
+        await db.flush()
+        await _refresh_card_aggregates(db, card)
+
+    logger.info(
+        "EMI upsert complete from PDF: %d record(s) for card %s (bank=%s)",
+        count,
+        card.id,
+        bank_code,
+    )
+    return count
+
