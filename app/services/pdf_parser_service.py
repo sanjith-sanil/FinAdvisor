@@ -3,6 +3,8 @@ import re
 import uuid
 
 import pdfplumber
+import pdfminer.pdfdocument
+from pdfminer.pdfdocument import PDFPasswordIncorrect, PDFEncryptionError
 
 from app.models.enums import TransactionType
 
@@ -33,7 +35,99 @@ def _detect_type(amounts: list[str], balance_before: float | None, balance_after
     return TransactionType.debit
 
 
-def parse_pdf(file_path: str) -> list[dict]:
+def _open_pdf_with_passwords(file_path: str, passwords: list[str] | None = None):
+    pwds_to_try = [None]
+    if passwords:
+        for p in passwords:
+            if p and p not in pwds_to_try:
+                pwds_to_try.append(p)
+
+    last_err = None
+    for pwd in pwds_to_try:
+        try:
+            return pdfplumber.open(file_path, password=pwd)
+        except (PDFPasswordIncorrect, PDFEncryptionError) as e:
+            last_err = e
+            continue
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "password" in err_msg or "encrypt" in err_msg:
+                last_err = e
+                continue
+            raise e
+
+    if last_err:
+        raise last_err
+    raise PDFPasswordIncorrect("Failed to decrypt PDF with provided passwords.")
+
+
+def generate_candidate_passwords(
+    full_name: str,
+    date_of_birth: datetime.date | None = None,
+    phone_number: str | None = None,
+    cards_last4: list[str] | None = None,
+) -> list[str]:
+    candidates = []
+
+    # Clean name: keep only letters
+    name_clean = "".join(c for c in full_name if c.isalpha())
+    if not name_clean:
+        name_clean = "user"
+
+    name_4_lower = name_clean[:4].lower()
+    name_4_upper = name_clean[:4].upper()
+
+    # Extract date parts if DOB exists
+    ddmm = ""
+    ddmmyyyy = ""
+    if date_of_birth:
+        if isinstance(date_of_birth, str):
+            try:
+                dt = datetime.datetime.fromisoformat(date_of_birth)
+                ddmm = dt.strftime("%d%m")
+                ddmmyyyy = dt.strftime("%d%m%Y")
+            except Exception:
+                pass
+        else:
+            try:
+                ddmm = date_of_birth.strftime("%d%m")
+                ddmmyyyy = date_of_birth.strftime("%d%m%Y")
+            except Exception:
+                pass
+
+    if ddmm:
+        candidates.append(f"{name_4_lower}{ddmm}")
+        candidates.append(f"{name_4_upper}{ddmm}")
+
+    if cards_last4:
+        for last4 in cards_last4:
+            candidates.append(f"{name_4_upper}{last4}")
+            candidates.append(f"{name_4_lower}{last4}")
+            if ddmmyyyy:
+                candidates.append(f"{ddmmyyyy}{last4}")
+
+    if ddmmyyyy:
+        candidates.append(ddmmyyyy)
+        candidates.append(ddmm)
+
+    if phone_number:
+        phone_clean = "".join(c for c in phone_number if c.isdigit())
+        if len(phone_clean) >= 4:
+            candidates.append(phone_clean[-4:])
+        candidates.append(phone_clean)
+
+    # Maintain uniqueness and order
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        if c and c not in seen:
+            seen.add(c)
+            unique_candidates.append(c)
+
+    return unique_candidates
+
+
+def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
     transactions: list[dict] = []
     last_balance: float | None = None
 
@@ -41,7 +135,7 @@ def parse_pdf(file_path: str) -> list[dict]:
     amount_regex = re.compile(r"([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)")
     drcr_regex = re.compile(r"\b(Dr|Cr)\b", re.IGNORECASE)
 
-    with pdfplumber.open(file_path) as pdf:
+    with _open_pdf_with_passwords(file_path, passwords) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
             for line in text.splitlines():
@@ -82,10 +176,10 @@ def parse_pdf(file_path: str) -> list[dict]:
     return transactions
 
 
-def extract_text_from_pdf(file_path: str) -> str:
+def extract_text_from_pdf(file_path: str, passwords: list[str] | None = None) -> str:
     """Extract all text from a PDF file."""
     all_text = []
-    with pdfplumber.open(file_path) as pdf:
+    with _open_pdf_with_passwords(file_path, passwords) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if text:

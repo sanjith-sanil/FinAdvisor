@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/v1/pdf", tags=["pdf"])
 async def upload_pdf(
     user_id: uuid.UUID,
     bank_name: str | None = None,
+    password: str | None = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ) -> PdfUploadOut:
@@ -40,7 +41,22 @@ async def upload_pdf(
     db.add(upload)
     await db.flush()
 
-    transactions = parse_pdf(file_path)
+    # Retrieve all user decryption passwords (stored card passwords + generated candidates)
+    from app.services.emi_upsert_service import _get_user_decryption_passwords
+    passwords = await _get_user_decryption_passwords(db, user_id)
+    if password:
+        passwords = [password] + [p for p in passwords if p != password]
+
+    try:
+        transactions = parse_pdf(file_path, passwords=passwords)
+    except Exception as e:
+        upload.status = PdfStatus.failed
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=f"PDF parsing/decryption failed: {str(e)}"
+        )
+
     bank_code = None
     if bank_name:
         for k in ["HDFC", "SBI", "ICICI", "AXIS", "KOTAK", "YES", "INDUSIND", "IDFC"]:
@@ -81,6 +97,7 @@ async def upload_pdf(
             bank_code=bank_code,
             file_path=file_path,
             filename=file.filename,
+            passwords=passwords,
         )
 
     upload.status = PdfStatus.completed
@@ -105,7 +122,11 @@ async def upload_status(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/uploads/{upload_id}/reparse", response_model=PdfUploadOut)
-async def reparse_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> PdfUploadOut:
+async def reparse_upload(
+    upload_id: uuid.UUID,
+    password: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+) -> PdfUploadOut:
     upload = await db.get(PdfUpload, upload_id)
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
@@ -113,7 +134,21 @@ async def reparse_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db
     upload.status = PdfStatus.processing
     await db.commit()
 
-    transactions = parse_pdf(upload.file_path)
+    from app.services.emi_upsert_service import _get_user_decryption_passwords
+    passwords = await _get_user_decryption_passwords(db, upload.user_id)
+    if password:
+        passwords = [password] + [p for p in passwords if p != password]
+
+    try:
+        transactions = parse_pdf(upload.file_path, passwords=passwords)
+    except Exception as e:
+        upload.status = PdfStatus.failed
+        await db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail=f"PDF parsing/decryption failed: {str(e)}"
+        )
+
     bank_code = None
     if upload.bank_name:
         for k in ["HDFC", "SBI", "ICICI", "AXIS", "KOTAK", "YES", "INDUSIND", "IDFC"]:
@@ -154,6 +189,7 @@ async def reparse_upload(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db
             bank_code=bank_code,
             file_path=upload.file_path,
             filename=upload.filename,
+            passwords=passwords,
         )
 
     upload.status = PdfStatus.completed

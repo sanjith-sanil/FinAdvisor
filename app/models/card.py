@@ -41,6 +41,7 @@ class Card(Base):
     fuel_surcharge_waiver: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     credit_score_impact: Mapped[int] = mapped_column(Integer, server_default="0", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text)
+    statement_password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default="true")
     color_theme: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())

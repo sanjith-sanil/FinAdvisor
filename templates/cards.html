@@ -348,6 +348,14 @@
           </div>
 
           <div class="grid-span-full">
+            <label for="statementPassword">PDF Statement Password</label>
+            <input id="statementPassword" name="statement_password" type="password" placeholder="Enter password to auto-decrypt statement attachments from emails" />
+            <small style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">
+              (Optional) Used to automatically parse statement PDFs received in your emails. Stored securely and encrypted. Leave blank to keep existing password.
+            </small>
+          </div>
+
+          <div class="grid-span-full">
             <label for="notes">Notes</label>
             <textarea id="notes" name="notes" rows="2" placeholder="Any notes for this card"></textarea>
           </div>

@@ -70,6 +70,11 @@ async def create_card(
     card_data = payload.model_dump()
     card_data["user_id"] = resolved_user_id
 
+    statement_password = card_data.pop("statement_password", None)
+    if statement_password:
+        from app.services.crypto_service import encrypt_text
+        card_data["statement_password_encrypted"] = encrypt_text(statement_password)
+
     card = Card(**card_data)
     db.add(card)
     await db.flush()
@@ -102,6 +107,12 @@ async def update_card(
 
     update_data = payload.model_dump(exclude_unset=True)
     update_data.pop("user_id", None)
+
+    statement_password = update_data.pop("statement_password", None)
+    if statement_password is not None:
+        if statement_password.strip():
+            from app.services.crypto_service import encrypt_text
+            card.statement_password_encrypted = encrypt_text(statement_password.strip())
 
     for field, value in update_data.items():
         setattr(card, field, value)

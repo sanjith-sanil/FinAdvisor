@@ -1359,6 +1359,9 @@ function prefillCardForm(card) {
     }
   });
 
+  const statementPassword = document.getElementById("statementPassword");
+  if (statementPassword) statementPassword.value = "";
+
   const loungeAccess = document.getElementById("loungeAccess");
   if (loungeAccess) loungeAccess.value = card.lounge_access ? "true" : "false";
 

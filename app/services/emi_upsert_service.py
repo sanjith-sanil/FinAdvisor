@@ -240,12 +240,58 @@ async def process_emi_from_email(
     return count
 
 
+async def _get_user_decryption_passwords(db: AsyncSession, user_id: uuid.UUID) -> list[str]:
+    from app.models.user import User
+    from app.models.card import Card
+    from app.services.pdf_parser_service import generate_candidate_passwords
+    from app.services.crypto_service import decrypt_text
+
+    # Fetch user details
+    user = await db.get(User, user_id)
+    if not user:
+        return []
+
+    # Fetch all user cards
+    stmt = select(Card).where(Card.user_id == user_id)
+    cards = (await db.execute(stmt)).scalars().all()
+
+    # Decrypt stored passwords
+    stored_passwords = []
+    cards_last4 = []
+    for card in cards:
+        cards_last4.append(card.card_last4)
+        if card.statement_password_encrypted:
+            try:
+                dec = decrypt_text(card.statement_password_encrypted)
+                if dec:
+                    stored_passwords.append(dec)
+            except Exception:
+                pass
+
+    # Generate candidates
+    candidates = generate_candidate_passwords(
+        full_name=user.full_name,
+        date_of_birth=user.date_of_birth,
+        phone_number=user.phone_number,
+        cards_last4=cards_last4,
+    )
+
+    # Return stored passwords first, then candidates
+    all_pwds = []
+    for p in (stored_passwords + candidates):
+        if p and p not in all_pwds:
+            all_pwds.append(p)
+
+    return all_pwds
+
+
 async def process_emi_from_pdf(
     db: AsyncSession,
     user_id: uuid.UUID,
     bank_code: str,
     file_path: str,
     filename: str = "",
+    passwords: list[str] | None = None,
 ) -> int:
     """Detect, parse, and persist EMI data from a credit card statement PDF.
 
@@ -253,8 +299,11 @@ async def process_emi_from_pdf(
     """
     from app.services.pdf_parser_service import extract_text_from_pdf
 
+    if passwords is None:
+        passwords = await _get_user_decryption_passwords(db, user_id)
+
     try:
-        pdf_text = extract_text_from_pdf(file_path)
+        pdf_text = extract_text_from_pdf(file_path, passwords=passwords)
     except Exception as e:
         logger.error("Failed to extract text from PDF statement %s: %s", file_path, e)
         return 0
@@ -326,9 +375,11 @@ async def process_pdf_attachment_from_email(
         sync_balances_for_transaction,
     )
 
+    passwords = await _get_user_decryption_passwords(db, user_id)
+
     # 1. Parse standard transactions from PDF
     try:
-        transactions = parse_pdf(file_path)
+        transactions = parse_pdf(file_path, passwords=passwords)
     except Exception as e:
         logger.error("Failed to parse transactions from PDF attachment %s: %s", filename, e)
         transactions = []
@@ -371,6 +422,7 @@ async def process_pdf_attachment_from_email(
             bank_code=bank_info["bank_code"],
             file_path=file_path,
             filename=filename,
+            passwords=passwords,
         )
     except Exception as e:
         logger.error("Failed to parse EMIs from PDF attachment %s: %s", filename, e)

@@ -65,7 +65,7 @@ class CardBase(BaseModel):
 
 
 class CardCreate(CardBase):
-    pass
+    statement_password: str | None = None
 
 
 class CardUpdate(BaseModel):
@@ -98,6 +98,7 @@ class CardUpdate(BaseModel):
     fuel_surcharge_waiver: bool | None = None
     credit_score_impact: int | None = None
     notes: str | None = None
+    statement_password: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
