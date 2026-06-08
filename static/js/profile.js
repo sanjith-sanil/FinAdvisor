@@ -1,6 +1,5 @@
 const tabs = {
 	personal: document.getElementById("personalTab"),
-	accounts: document.getElementById("accountsTab"),
 	security: document.getElementById("securityTab"),
 	"auto-collection": document.getElementById("autoCollectionTab"),
 };
@@ -553,68 +552,6 @@ document.getElementById("profileForm")?.addEventListener("submit", async (e) => 
 	}
 });
 
-async function loadBankAccounts() {
-	const userId = getUserId();
-	const container = document.getElementById("bankAccounts");
-	if (!container) return;
-
-	try {
-		const accounts = await apiFetch(`/api/v1/bank-accounts/?user_id=${userId}`);
-
-		if (accounts.length === 0) {
-			container.innerHTML = `
-				<div style="text-align: center; padding: 24px; color: #64748B; font-size: 13px;">
-					No bank accounts linked yet.
-				</div>
-			`;
-			return;
-		}
-
-		container.innerHTML = accounts.map(acc => `
-			<div class="bank-account-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 12px; border-radius: 12px; border: 1px solid rgba(226, 232, 240, 0.8); background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);">
-				<div style="display: flex; align-items: center; gap: 14px;">
-					<div style="width: 42px; height: 42px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2563eb;">
-						<i data-lucide="landmark" style="width: 20px; height: 20px;"></i>
-					</div>
-					<div>
-						<div style="font-weight: 700; color: #1e293b; font-size: 14px;">${acc.bank_name}</div>
-						<div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-							${acc.account_type ? acc.account_type.toUpperCase() : "SAVINGS"} · •••• ${acc.account_number_last4 || "0000"}
-						</div>
-					</div>
-				</div>
-				<div style="display: flex; align-items: center; gap: 20px;">
-					<div style="text-align: right;">
-						<div style="font-weight: 700; color: #0f172a; font-size: 15px;">Rs ${Number(acc.current_balance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</div>
-						<div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-top: 1px;">Balance</div>
-					</div>
-					<button class="icon-btn delete-account-btn" data-account-id="${acc.id}" type="button" aria-label="Delete bank account" title="Delete bank account" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.05); cursor: pointer; display: flex; align-items: center; justify-content: center;">
-						<i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
-					</button>
-				</div>
-			</div>
-		`).join("");
-
-		container.querySelectorAll(".delete-account-btn").forEach(btn => {
-			btn.addEventListener("click", async () => {
-				const accountId = btn.dataset.accountId;
-				if (confirm("Are you sure you want to unlink this bank account?")) {
-					try {
-						await apiFetch(`/api/v1/bank-accounts/${accountId}`, { method: "DELETE" });
-						showToast("Bank account unlinked successfully", "success");
-						loadBankAccounts();
-					} catch (err) {
-						showToast(err.message || "Failed to unlink account", "error");
-					}
-				}
-			});
-		});
-
-		if (window.lucide) lucide.createIcons();
-	} catch (err) {
-		console.error("Failed to load bank accounts:", err);
-	}
-}
 
 function initSecurityHandlers() {
 	const userId = getUserId();
@@ -687,7 +624,6 @@ if (document.getElementById("autoCollectionTab")) {
 	loadSmsSetup();
 	loadBankDomains();
 	loadPersonalDetails();
-	loadBankAccounts();
 	initSecurityHandlers();
 }
 

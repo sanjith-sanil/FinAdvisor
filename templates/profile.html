@@ -45,14 +45,10 @@
             <div class="profile-hero-title">Account Overview</div>
             <div class="profile-hero-sub">Track your identity, security, and communication preferences in one place.</div>
           </div>
-          <div class="profile-hero-metrics">
+          <div class="profile-hero-metrics" style="grid-template-columns: repeat(2, 1fr);">
             <div>
               <div class="profile-hero-value">98%</div>
               <div class="profile-hero-label">Profile completion</div>
-            </div>
-            <div>
-              <div class="profile-hero-value">3</div>
-              <div class="profile-hero-label">Linked banks</div>
             </div>
             <div>
               <div class="profile-hero-value">12h</div>
@@ -97,7 +93,6 @@
 
       <div class="profile-tabs">
         <div class="profile-tab active" data-tab="personal">Personal Details</div>
-        <div class="profile-tab" data-tab="accounts">Bank Accounts</div>
         <div class="profile-tab" data-tab="security">Security & Privacy</div>
         <div class="profile-tab" data-tab="auto-collection">Auto-Collection</div>
       </div>
@@ -132,12 +127,6 @@
           </form>
         </div>
 
-        <div id="accountsTab" class="profile-tab-panel">
-          <div class="profile-row">
-            <div class="section-title">Bank Accounts</div>
-          </div>
-          <div id="bankAccounts" class="profile-list"></div>
-        </div>
 
         <div id="securityTab" class="profile-tab-panel">
           <div class="glass-card profile-nested profile-nested-spacing">
