@@ -496,10 +496,242 @@ profileParseEmail?.addEventListener("click", async () => {
 });
 
 
+async function loadPersonalDetails() {
+	const userId = getUserId();
+	try {
+		const user = await apiFetch(`/api/v1/users/${userId}`);
+		const form = document.getElementById("profileForm");
+		if (form) {
+			form.elements["full_name"].value = user.full_name || "";
+			form.elements["email"].value = user.email || "";
+			form.elements["phone_number"].value = user.phone_number || "";
+			form.elements["date_of_birth"].value = user.date_of_birth || "";
+			form.elements["address"].value = user.address || "";
+		}
+	} catch (err) {
+		console.error("Failed to load personal details:", err);
+	}
+}
+
+document.getElementById("profileForm")?.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	const userId = getUserId();
+	const form = e.target;
+	const submitBtn = form.querySelector('button[type="submit"]');
+
+	const payload = {
+		full_name: form.elements["full_name"].value.trim(),
+		email: form.elements["email"].value.trim(),
+		phone_number: form.elements["phone_number"].value.trim() || null,
+		date_of_birth: form.elements["date_of_birth"].value || null,
+		address: form.elements["address"].value.trim() || null,
+	};
+
+	try {
+		if (submitBtn) submitBtn.disabled = true;
+		const updatedUser = await apiFetch(`/api/v1/users/${userId}`, {
+			method: "PUT",
+			body: JSON.stringify(payload),
+		});
+
+		localStorage.setItem("finadvisor_name", updatedUser.full_name);
+		localStorage.setItem("finadvisor_email", updatedUser.email);
+
+		if (profileName) profileName.textContent = updatedUser.full_name;
+		if (profileAvatar) {
+			const parts = updatedUser.full_name.trim().split(/\s+/).filter(Boolean);
+			const first = parts[0]?.[0] || "F";
+			const last = parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "";
+			profileAvatar.textContent = (first + last).toUpperCase();
+		}
+
+		showToast("Profile updated successfully", "success");
+	} catch (err) {
+		showToast(err.message || "Failed to update profile", "error");
+	} finally {
+		if (submitBtn) submitBtn.disabled = false;
+	}
+});
+
+async function loadBankAccounts() {
+	const userId = getUserId();
+	const container = document.getElementById("bankAccounts");
+	if (!container) return;
+
+	try {
+		const accounts = await apiFetch(`/api/v1/bank-accounts/?user_id=${userId}`);
+
+		if (accounts.length === 0) {
+			container.innerHTML = `
+				<div style="text-align: center; padding: 24px; color: #64748B; font-size: 13px;">
+					No bank accounts linked yet. Use the form below to link your first bank account.
+				</div>
+			`;
+			return;
+		}
+
+		container.innerHTML = accounts.map(acc => `
+			<div class="bank-account-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 12px; border-radius: 12px; border: 1px solid rgba(226, 232, 240, 0.8); background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(10px);">
+				<div style="display: flex; align-items: center; gap: 14px;">
+					<div style="width: 42px; height: 42px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #2563eb;">
+						<i data-lucide="landmark" style="width: 20px; height: 20px;"></i>
+					</div>
+					<div>
+						<div style="font-weight: 700; color: #1e293b; font-size: 14px;">${acc.bank_name}</div>
+						<div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+							${acc.account_type ? acc.account_type.toUpperCase() : "SAVINGS"} · •••• ${acc.account_number_last4 || "0000"}
+						</div>
+					</div>
+				</div>
+				<div style="display: flex; align-items: center; gap: 20px;">
+					<div style="text-align: right;">
+						<div style="font-weight: 700; color: #0f172a; font-size: 15px;">Rs ${Number(acc.current_balance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</div>
+						<div style="font-size: 10px; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-top: 1px;">Balance</div>
+					</div>
+					<button class="icon-btn delete-account-btn" data-account-id="${acc.id}" type="button" aria-label="Delete bank account" title="Delete bank account" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px; border-radius: 10px; background: rgba(239, 68, 68, 0.05); cursor: pointer; display: flex; align-items: center; justify-content: center;">
+						<i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+					</button>
+				</div>
+			</div>
+		`).join("");
+
+		container.querySelectorAll(".delete-account-btn").forEach(btn => {
+			btn.addEventListener("click", async () => {
+				const accountId = btn.dataset.accountId;
+				if (confirm("Are you sure you want to unlink this bank account?")) {
+					try {
+						await apiFetch(`/api/v1/bank-accounts/${accountId}`, { method: "DELETE" });
+						showToast("Bank account unlinked successfully", "success");
+						loadBankAccounts();
+					} catch (err) {
+						showToast(err.message || "Failed to unlink account", "error");
+					}
+				}
+			});
+		});
+
+		if (window.lucide) lucide.createIcons();
+	} catch (err) {
+		console.error("Failed to load bank accounts:", err);
+	}
+}
+
+document.getElementById("bankAccountForm")?.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	const userId = getUserId();
+	const form = e.target;
+	const submitBtn = form.querySelector('button[type="submit"]');
+
+	const raw = Object.fromEntries(new FormData(form));
+
+	const payload = {
+		user_id: userId,
+		bank_name: raw.bank_name.trim(),
+		account_type: raw.account_type,
+		account_number_last4: raw.account_number_last4.trim() || null,
+		current_balance: raw.current_balance ? parseFloat(raw.current_balance) : 0.0,
+		last_updated: new Date().toISOString(),
+	};
+
+	if (!payload.bank_name) {
+		showToast("Bank name is required", "error");
+		return;
+	}
+	if (payload.account_number_last4 && (payload.account_number_last4.length !== 4 || isNaN(Number(payload.account_number_last4)))) {
+		showToast("Last 4 digits must be exactly 4 numbers", "error");
+		return;
+	}
+
+	try {
+		if (submitBtn) submitBtn.disabled = true;
+		await apiFetch("/api/v1/bank-accounts/", {
+			method: "POST",
+			body: JSON.stringify(payload),
+		});
+
+		showToast("Bank account linked successfully", "success");
+		form.reset();
+		loadBankAccounts();
+	} catch (err) {
+		showToast(err.message || "Failed to link bank account", "error");
+	} finally {
+		if (submitBtn) submitBtn.disabled = false;
+	}
+});
+
+function initSecurityHandlers() {
+	const userId = getUserId();
+
+	// Change Password
+	document.getElementById("securityUpdatePasswordBtn")?.addEventListener("click", async () => {
+		const currentPassword = document.getElementById("securityCurrentPassword")?.value;
+		const newPassword = document.getElementById("securityNewPassword")?.value;
+		const confirmPassword = document.getElementById("securityConfirmPassword")?.value;
+
+		if (!currentPassword || !newPassword || !confirmPassword) {
+			showToast("All password fields are required", "error");
+			return;
+		}
+		if (newPassword !== confirmPassword) {
+			showToast("New passwords do not match", "error");
+			return;
+		}
+		if (newPassword.length < 6) {
+			showToast("Password must be at least 6 characters", "error");
+			return;
+		}
+
+		try {
+			const result = await apiFetch(`/api/v1/users/${userId}/change-password`, {
+				method: "POST",
+				body: JSON.stringify({
+					current_password: currentPassword,
+					new_password: newPassword,
+					confirm_password: confirmPassword,
+				}),
+			});
+			showToast(result.message || "Password updated successfully", "success");
+
+			document.getElementById("securityCurrentPassword").value = "";
+			document.getElementById("securityNewPassword").value = "";
+			document.getElementById("securityConfirmPassword").value = "";
+		} catch (err) {
+			showToast(err.message || "Failed to change password", "error");
+		}
+	});
+
+	// Export CSV
+	document.getElementById("profileExportDataBtn")?.addEventListener("click", () => {
+		window.location.href = `/api/v1/users/${userId}/export-data`;
+	});
+
+	// Delete Account
+	document.getElementById("profileDeleteAccountBtn")?.addEventListener("click", async () => {
+		if (confirm("WARNING: Are you sure you want to permanently delete your account? All transactions, credit cards, and bank account links will be lost. This action cannot be undone.")) {
+			try {
+				await apiFetch(`/api/v1/users/${userId}`, { method: "DELETE" });
+				showToast("Account deleted successfully", "success");
+
+				localStorage.removeItem("finadvisor_user_id");
+				localStorage.removeItem("finadvisor_name");
+				localStorage.removeItem("finadvisor_customer_id");
+				localStorage.removeItem("finadvisor_email");
+				window.location.href = "/signin";
+			} catch (err) {
+				showToast(err.message || "Failed to delete account", "error");
+			}
+		}
+	});
+}
+
+
 if (document.getElementById("autoCollectionTab")) {
 	loadEmailStatus();
 	loadSmsSetup();
 	loadBankDomains();
+	loadPersonalDetails();
+	loadBankAccounts();
+	initSecurityHandlers();
 }
 
 bankDomainSearch?.addEventListener("input", () => {
