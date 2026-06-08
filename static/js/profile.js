@@ -564,7 +564,7 @@ async function loadBankAccounts() {
 		if (accounts.length === 0) {
 			container.innerHTML = `
 				<div style="text-align: center; padding: 24px; color: #64748B; font-size: 13px;">
-					No bank accounts linked yet. Use the form below to link your first bank account.
+					No bank accounts linked yet.
 				</div>
 			`;
 			return;
@@ -615,49 +615,6 @@ async function loadBankAccounts() {
 		console.error("Failed to load bank accounts:", err);
 	}
 }
-
-document.getElementById("bankAccountForm")?.addEventListener("submit", async (e) => {
-	e.preventDefault();
-	const userId = getUserId();
-	const form = e.target;
-	const submitBtn = form.querySelector('button[type="submit"]');
-
-	const raw = Object.fromEntries(new FormData(form));
-
-	const payload = {
-		user_id: userId,
-		bank_name: raw.bank_name.trim(),
-		account_type: raw.account_type,
-		account_number_last4: raw.account_number_last4.trim() || null,
-		current_balance: raw.current_balance ? parseFloat(raw.current_balance) : 0.0,
-		last_updated: new Date().toISOString(),
-	};
-
-	if (!payload.bank_name) {
-		showToast("Bank name is required", "error");
-		return;
-	}
-	if (payload.account_number_last4 && (payload.account_number_last4.length !== 4 || isNaN(Number(payload.account_number_last4)))) {
-		showToast("Last 4 digits must be exactly 4 numbers", "error");
-		return;
-	}
-
-	try {
-		if (submitBtn) submitBtn.disabled = true;
-		await apiFetch("/api/v1/bank-accounts/", {
-			method: "POST",
-			body: JSON.stringify(payload),
-		});
-
-		showToast("Bank account linked successfully", "success");
-		form.reset();
-		loadBankAccounts();
-	} catch (err) {
-		showToast(err.message || "Failed to link bank account", "error");
-	} finally {
-		if (submitBtn) submitBtn.disabled = false;
-	}
-});
 
 function initSecurityHandlers() {
 	const userId = getUserId();
