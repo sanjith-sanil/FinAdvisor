@@ -304,3 +304,77 @@ async def process_emi_from_pdf(
     )
     return count
 
+
+async def process_pdf_attachment_from_email(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    bank_info: dict[str, str],
+    file_path: str,
+    filename: str,
+    received_at: datetime.datetime,
+    sender_email: str,
+) -> int:
+    """Parse transactions and EMIs from a PDF attachment found in an email.
+
+    Returns the number of standard transactions parsed.
+    """
+    from app.services.pdf_parser_service import parse_pdf
+    from app.models.transaction import Transaction
+    from app.models.enums import TransactionType, TransactionSource
+    from app.services.balance_sync_service import (
+        resolve_transaction_accounts,
+        sync_balances_for_transaction,
+    )
+
+    # 1. Parse standard transactions from PDF
+    try:
+        transactions = parse_pdf(file_path)
+    except Exception as e:
+        logger.error("Failed to parse transactions from PDF attachment %s: %s", filename, e)
+        transactions = []
+
+    txns_saved = 0
+    for txn in transactions:
+        t = Transaction(
+            user_id=user_id,
+            transaction_type=txn["transaction_type"],
+            amount=txn["amount"],
+            description=txn["description"][:2000],
+            transaction_date=txn["transaction_date"] or received_at,
+            balance_after=txn["balance_after"],
+            source=TransactionSource.email,
+            bank_name=bank_info["bank_name"],
+            bank_code=bank_info["bank_code"],
+            sender_email=sender_email,
+            raw_message=f"PDF attachment transaction: {txn['description']}"[:2000],
+        )
+        db.add(t)
+        await resolve_transaction_accounts(db, t)
+        await db.flush()
+        if t.card_id or t.bank_account_id:
+            await sync_balances_for_transaction(
+                db=db,
+                user_id=user_id,
+                card_id=t.card_id,
+                bank_account_id=t.bank_account_id,
+                amount=t.amount,
+                txn_type=t.transaction_type,
+                operation="insert"
+            )
+        txns_saved += 1
+
+    # 2. Parse EMIs from PDF
+    try:
+        await process_emi_from_pdf(
+            db=db,
+            user_id=user_id,
+            bank_code=bank_info["bank_code"],
+            file_path=file_path,
+            filename=filename,
+        )
+    except Exception as e:
+        logger.error("Failed to parse EMIs from PDF attachment %s: %s", filename, e)
+
+    return txns_saved
+
+

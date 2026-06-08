@@ -22,7 +22,7 @@ from app.models.transaction import Transaction
 from app.services.bank_domain_whitelist import get_bank_info
 from app.services.crypto_service import decrypt_text
 from app.services.sms_parser_service import looks_like_transaction_alert, parse_sms
-from app.services.emi_upsert_service import process_emi_from_email
+from app.services.emi_upsert_service import process_emi_from_email, process_pdf_attachment_from_email
 from app.services.balance_sync_service import (
     resolve_transaction_accounts,
     sync_balances_for_transaction,
@@ -294,6 +294,36 @@ async def fetch_all_bank_emails_from_folder(
                     )
             except Exception:
                 logger.exception("EMI processing failed for email %s", msg_id)
+
+            # --- Extract and parse PDF attachments if any ---
+            try:
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        content_type = part.get_content_type()
+                        content_disposition = str(part.get("Content-Disposition") or "").lower()
+                        filename = _decode_header(part.get_filename() or "")
+
+                        if (content_type == "application/pdf" or filename.lower().endswith(".pdf")) and ("attachment" in content_disposition or filename):
+                            pdf_data = part.get_payload(decode=True)
+                            if pdf_data:
+                                from app.utils.files import save_file_bytes
+                                file_path = save_file_bytes(pdf_data, filename, prefix="statement-email-att-")
+                                
+                                txns_saved = await process_pdf_attachment_from_email(
+                                    db=db,
+                                    user_id=user_id,
+                                    bank_info=bank_info,
+                                    file_path=file_path,
+                                    filename=filename,
+                                    received_at=received_at,
+                                    sender_email=sender_email
+                                )
+                                results["transactions_saved"] += txns_saved
+                                if txns_saved > 0:
+                                    raw_entry.is_processed = True
+                                logger.info("Parsed PDF attachment %s from email %s: %d transaction(s) saved", filename, msg_id, txns_saved)
+            except Exception:
+                logger.exception("Failed to parse PDF attachment from IMAP email %s", msg_id)
 
         except Exception:
             logger.exception("Failed to process email %s from folder %s", msg_id, folder_name)

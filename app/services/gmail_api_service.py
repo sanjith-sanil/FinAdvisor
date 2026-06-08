@@ -155,9 +155,29 @@ class GmailAPIService:
                     received_at = datetime.datetime.now(datetime.timezone.utc)
 
             body = ""
+            attachments = []
             if is_bank_email(sender_email):
                 full = service.users().messages().get(userId="me", id=gmail_id, format="full").execute()
                 body = self._extract_body(full.get("payload", {}))
+                
+                # Extract PDF attachments
+                stack = [full.get("payload", {})]
+                while stack:
+                    curr = stack.pop()
+                    stack.extend(curr.get("parts", []) or [])
+                    filename = curr.get("filename", "")
+                    content_disposition = ""
+                    for header in curr.get("headers", []):
+                        if header.get("name", "").lower() == "content-disposition":
+                            content_disposition = header.get("value", "").lower()
+                            break
+                    if (curr.get("mimeType") == "application/pdf" or filename.lower().endswith(".pdf")) and ("attachment" in content_disposition or filename):
+                        attachment_id = curr.get("body", {}).get("attachmentId")
+                        if attachment_id:
+                            attachments.append({
+                                "filename": filename,
+                                "attachment_id": attachment_id
+                            })
 
             results.append(
                 {
@@ -167,6 +187,7 @@ class GmailAPIService:
                     "body": body,
                     "received_at": received_at,
                     "gmail_id": metadata.get("id"),
+                    "attachments": attachments,
                 }
             )
         return results
@@ -320,6 +341,45 @@ class GmailAPIService:
                         "EMI processing failed for Gmail message %s",
                         message.get("message_id"),
                     )
+
+                # --- PDF attachment extraction ---
+                try:
+                    for att in message.get("attachments", []):
+                        filename = att["filename"]
+                        attachment_id = att["attachment_id"]
+                        att_data = (
+                            service.users()
+                            .messages()
+                            .attachments()
+                            .get(userId="me", messageId=message.get("gmail_id"), id=attachment_id)
+                            .execute()
+                        )
+                        import base64
+                        raw_data = base64.urlsafe_b64decode(att_data.get("data", ""))
+                        if raw_data:
+                            from app.utils.files import save_file_bytes
+                            file_path = save_file_bytes(raw_data, filename, prefix="statement-email-att-")
+                            
+                            from app.services.emi_upsert_service import process_pdf_attachment_from_email
+                            txns_saved = await process_pdf_attachment_from_email(
+                                db=db,
+                                user_id=email_config.user_id,
+                                bank_info=bank_info,
+                                file_path=file_path,
+                                filename=filename,
+                                received_at=message.get("received_at") or datetime.datetime.now(datetime.timezone.utc),
+                                sender_email=sender_email
+                            )
+                            stats["transactions_saved"] += txns_saved
+                            if txns_saved > 0:
+                                raw.is_processed = True
+                            logger.info("Parsed PDF attachment %s: %d transaction(s) saved", filename, txns_saved)
+                except Exception:
+                    logger.exception(
+                        "PDF attachment processing failed for Gmail message %s",
+                        message.get("message_id"),
+                    )
+
                 try:
                     self.mark_as_read(creds, message.get("gmail_id", ""))
                 except HttpError as exc:
