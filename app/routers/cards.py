@@ -95,6 +95,24 @@ async def get_card(
     return await _get_card_by_owner(db, card_id, user_id)
 
 
+@router.get("/{card_id}/statement-password")
+async def get_card_statement_password(
+    card_id: uuid.UUID,
+    user_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    card = await _get_card_by_owner(db, card_id, user_id)
+    password = None
+    if card.statement_password_encrypted:
+        from app.services.crypto_service import decrypt_text
+        try:
+            password = decrypt_text(card.statement_password_encrypted)
+        except Exception:
+            pass
+    return {"password": password}
+
+
+
 @router.put("/{card_id}", response_model=CardOut)
 async def update_card(
     card_id: uuid.UUID,

@@ -105,17 +105,15 @@ const syncStats = document.getElementById("syncStats");
 const syncEmailsFound = document.getElementById("syncEmailsFound");
 const syncTxnFound = document.getElementById("syncTxnFound");
 
-const smsStatusPill = document.getElementById("smsStatusPill");
-const profileSmsWebhook = document.getElementById("profileSmsWebhook");
-const profileSmsKey = document.getElementById("profileSmsKey");
-const profileSmsUser = document.getElementById("profileSmsUser");
-const profileSmsFilters = document.getElementById("profileSmsFilters");
-const copyProfileWebhook = document.getElementById("copyProfileWebhook");
-const copyProfileKey = document.getElementById("copyProfileKey");
-const copyProfileUser = document.getElementById("copyProfileUser");
-const profileSmsRaw = document.getElementById("profileSmsRaw");
-const profileParseSms = document.getElementById("profileParseSms");
-const profileSmsPreview = document.getElementById("profileSmsPreview");
+const pdfCardSelect = document.getElementById("pdfCardSelect");
+const pdfBankName = document.getElementById("pdfBankName");
+const pdfPassword = document.getElementById("pdfPassword");
+const pdfDropzone = document.getElementById("pdfDropzone");
+const pdfDropzoneText = document.getElementById("pdfDropzoneText");
+const pdfFile = document.getElementById("pdfFile");
+const pdfUploadBtn = document.getElementById("pdfUploadBtn");
+const pdfUploadsList = document.getElementById("pdfUploadsList");
+const pdfUploadForm = document.getElementById("pdfUploadForm");
 const bankDomainSearch = document.getElementById("bankDomainSearch");
 const bankDomainGroups = document.getElementById("bankDomainGroups");
 const bankDomainStats = document.getElementById("bankDomainStats");
@@ -370,19 +368,65 @@ async function loadBankDomains() {
 	renderBankDomains(bankDomainSearch?.value || "");
 }
 
-async function loadSmsSetup() {
-	const userId = getUserId();
-	const data = await apiFetch(`/api/v1/sms/setup-info/${userId}`);
-	const user = await apiFetch(`/api/v1/users/${userId}`);
-	profileSmsWebhook.value = data.webhook_url;
-	profileSmsKey.value = data.api_key;
-	profileSmsUser.value = data.user_id;
-	profileSmsFilters.innerHTML = data.filter_keywords
-		.split(",")
-		.map((item) => `<span class="filter-tag">${item.trim()}</span>`)
-		.join("");
-	smsStatusPill.textContent = user.sms_configured ? "Active" : "Manual Only";
+async function loadUserCards() {
+	if (!pdfCardSelect) return;
+	try {
+		const userId = getUserId();
+		const cards = await apiFetch(`/api/v1/cards/?user_id=${userId}`);
+		pdfCardSelect.innerHTML = '<option value="">-- Select Card (Optional) --</option>';
+		cards.forEach(card => {
+			const option = document.createElement("option");
+			option.value = card.id;
+			option.dataset.bank = card.bank_name;
+			option.textContent = `${card.bank_name} - **** ${card.card_last4} (${card.card_holder_name})`;
+			pdfCardSelect.appendChild(option);
+		});
+	} catch (error) {
+		console.error("Failed to load cards:", error);
+		pdfCardSelect.innerHTML = '<option value="">Failed to load cards</option>';
+	}
 }
+
+async function loadPdfUploads() {
+	if (!pdfUploadsList) return;
+	try {
+		const userId = getUserId();
+		const uploads = await apiFetch(`/api/v1/pdf/uploads?user_id=${userId}`);
+		if (!uploads || uploads.length === 0) {
+			pdfUploadsList.innerHTML = '<div style="text-align: center; color: #64748b; padding: 24px 0; font-size: 13px;">No statement uploads yet.</div>';
+			return;
+		}
+		
+		uploads.sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date));
+		
+		pdfUploadsList.innerHTML = uploads.map(upload => {
+			const dateStr = new Date(upload.upload_date).toLocaleDateString("en-IN", {
+				day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+			});
+			const bankName = upload.bank_name || "Unknown Bank";
+			const count = upload.total_transactions_parsed || 0;
+			const status = (upload.status || "processing").toLowerCase();
+			const statusLabel = status === "completed" ? `${count} txns` : status;
+			
+			return `
+				<div class="pdf-upload-item">
+					<div>
+						<div class="filename" title="${upload.filename}">${upload.filename}</div>
+						<div class="bank">${bankName}</div>
+					</div>
+					<div class="meta">
+						<span class="status-badge ${status}">${statusLabel}</span>
+						<div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${dateStr}</div>
+					</div>
+				</div>
+			`;
+		}).join("");
+	} catch (error) {
+		console.error("Failed to load pdf uploads:", error);
+		pdfUploadsList.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 24px 0; font-size: 13px;">Failed to load upload history</div>';
+	}
+}
+
 
 profileConnectGmail?.addEventListener("click", () => {
 	const userId = getUserId();
@@ -443,19 +487,144 @@ const copyValue = async (value) => {
 	}
 };
 
-copyProfileWebhook?.addEventListener("click", () => copyValue(profileSmsWebhook.value));
-copyProfileKey?.addEventListener("click", () => copyValue(profileSmsKey.value));
-copyProfileUser?.addEventListener("click", () => copyValue(profileSmsUser.value));
+pdfCardSelect?.addEventListener("change", async () => {
+	const cardId = pdfCardSelect.value;
+	if (!cardId) {
+		if (pdfPassword) pdfPassword.value = "";
+		if (pdfBankName) pdfBankName.value = "";
+		return;
+	}
 
-profileParseSms?.addEventListener("click", async () => {
-	const userId = getUserId();
-	const result = await apiFetch(`/api/v1/sms/ingest?user_id=${userId}`, {
-		method: "POST",
-		body: JSON.stringify({ raw_sms: profileSmsRaw.value }),
-	});
-	profileSmsPreview.style.display = "block";
-	profileSmsPreview.textContent = JSON.stringify(result.transaction || {}, null, 2);
+	const selectedCardOption = pdfCardSelect.selectedOptions[0];
+	const bankNameVal = selectedCardOption.dataset.bank || "";
+	if (bankNameVal && pdfBankName) {
+		const options = Array.from(pdfBankName.options);
+		const matchedOption = options.find(opt => opt.value && (bankNameVal.toLowerCase().includes(opt.value.toLowerCase()) || opt.value.toLowerCase().includes(bankNameVal.toLowerCase())));
+		if (matchedOption) {
+			pdfBankName.value = matchedOption.value;
+		}
+	}
+
+	try {
+		const userId = getUserId();
+		const data = await apiFetch(`/api/v1/cards/${cardId}/statement-password?user_id=${userId}`);
+		if (data && data.password && pdfPassword) {
+			pdfPassword.value = data.password;
+			showToast("Fetched card statement password", "success");
+		} else if (pdfPassword) {
+			pdfPassword.value = "";
+		}
+	} catch (error) {
+		console.error("Failed to fetch card password:", error);
+		if (pdfPassword) pdfPassword.value = "";
+	}
 });
+
+pdfDropzone?.addEventListener("dragover", (e) => {
+	e.preventDefault();
+	pdfDropzone.classList.add("dragover");
+});
+
+pdfDropzone?.addEventListener("dragleave", () => {
+	pdfDropzone.classList.remove("dragover");
+});
+
+pdfDropzone?.addEventListener("drop", (e) => {
+	e.preventDefault();
+	pdfDropzone.classList.remove("dragover");
+	const files = e.dataTransfer.files;
+	if (files.length > 0) {
+		handleSelectedPdf(files[0]);
+	}
+});
+
+pdfDropzone?.addEventListener("click", () => {
+	pdfFile?.click();
+});
+
+pdfFile?.addEventListener("change", () => {
+	if (pdfFile.files && pdfFile.files.length > 0) {
+		handleSelectedPdf(pdfFile.files[0]);
+	}
+});
+
+function handleSelectedPdf(file) {
+	if (!file.name.toLowerCase().endsWith(".pdf")) {
+		showToast("Only PDF statement files are allowed", "error");
+		if (pdfUploadBtn) pdfUploadBtn.disabled = true;
+		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
+		return;
+	}
+
+	const maxBytes = 10 * 1024 * 1024; // 10MB
+	if (file.size > maxBytes) {
+		showToast("PDF file exceeds maximum limit of 10MB", "error");
+		if (pdfUploadBtn) pdfUploadBtn.disabled = true;
+		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
+		return;
+	}
+
+	if (pdfDropzoneText) {
+		pdfDropzoneText.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+	}
+	if (pdfUploadBtn) {
+		pdfUploadBtn.disabled = false;
+	}
+}
+
+pdfUploadForm?.addEventListener("submit", async (e) => {
+	e.preventDefault();
+	
+	const file = pdfFile.files && pdfFile.files[0] ? pdfFile.files[0] : null;
+	if (!file) {
+		showToast("Please select a PDF file first", "error");
+		return;
+	}
+
+	const userId = getUserId();
+	const cardId = pdfCardSelect ? pdfCardSelect.value : "";
+	const bankName = pdfBankName ? pdfBankName.value : "";
+	const password = pdfPassword ? pdfPassword.value : "";
+
+	const formData = new FormData();
+	formData.append("file", file);
+	if (password) {
+		formData.append("password", password);
+	}
+
+	let uploadUrl = `/api/v1/pdf/upload?user_id=${userId}`;
+	if (cardId) uploadUrl += `&card_id=${cardId}`;
+	if (bankName) uploadUrl += `&bank_name=${encodeURIComponent(bankName)}`;
+
+	const originalBtnText = pdfUploadBtn.textContent;
+	try {
+		pdfUploadBtn.disabled = true;
+		pdfUploadBtn.textContent = "Uploading & Parsing...";
+		
+		const result = await apiFetch(uploadUrl, {
+			method: "POST",
+			body: formData,
+			headers: {}
+		});
+
+		showToast(`PDF Statement processed successfully! Parsed ${result.total_transactions_parsed || 0} transactions.`, "success");
+		
+		pdfUploadForm.reset();
+		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
+		pdfUploadBtn.disabled = true;
+		
+		await loadPdfUploads();
+	} catch (error) {
+		console.error("PDF upload error:", error);
+		showToast(error.message || "Failed to upload and parse PDF", "error");
+	} finally {
+		pdfUploadBtn.textContent = originalBtnText;
+		if (pdfFile.files && pdfFile.files.length > 0) {
+			pdfUploadBtn.disabled = false;
+		}
+	}
+});
+
 
 profileParseEmail?.addEventListener("click", async () => {
 	const userId = getUserId();
@@ -621,7 +790,8 @@ function initSecurityHandlers() {
 
 if (document.getElementById("autoCollectionTab")) {
 	loadEmailStatus();
-	loadSmsSetup();
+	loadUserCards();
+	loadPdfUploads();
 	loadBankDomains();
 	loadPersonalDetails();
 	initSecurityHandlers();

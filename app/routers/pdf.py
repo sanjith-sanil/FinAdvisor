@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api/v1/pdf", tags=["pdf"])
 @router.post("/upload", response_model=PdfUploadOut)
 async def upload_pdf(
     user_id: uuid.UUID,
+    card_id: uuid.UUID | None = Query(None),
     bank_name: str | None = None,
     password: str | None = Form(None),
     file: UploadFile = File(...),
@@ -29,6 +30,13 @@ async def upload_pdf(
 ) -> PdfUploadOut:
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    from app.models.card import Card
+    card = None
+    if card_id:
+        card = await db.get(Card, card_id)
+        if card and not bank_name:
+            bank_name = card.bank_name
 
     file_path = save_upload_file(file, prefix="statement-")
     upload = PdfUpload(
@@ -74,10 +82,12 @@ async def upload_pdf(
             balance_after=txn["balance_after"],
             source=TransactionSource.pdf_upload,
             bank_name=bank_name,
-            bank_code=bank_code
+            bank_code=bank_code,
+            card_id=card.id if card else None
         )
         db.add(t)
-        await resolve_transaction_accounts(db, t)
+        if not t.card_id:
+            await resolve_transaction_accounts(db, t)
         await db.flush()
         if t.card_id or t.bank_account_id:
             await sync_balances_for_transaction(
@@ -105,6 +115,7 @@ async def upload_pdf(
     await db.commit()
     await db.refresh(upload)
     return upload
+
 
 
 @router.get("/uploads", response_model=list[PdfUploadOut])

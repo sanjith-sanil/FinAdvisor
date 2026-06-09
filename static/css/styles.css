@@ -6708,3 +6708,90 @@ small {
 .history-page {
   width: min(1700px, 100vw);
 }
+
+/* PDF Statement Upload dropzone and list styles */
+.pdf-dropzone {
+  border: 2px dashed rgba(79, 70, 229, 0.25);
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(248, 250, 252, 0.5);
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdf-dropzone:hover, .pdf-dropzone.dragover {
+  border-color: var(--primary);
+  background: rgba(79, 70, 229, 0.04);
+}
+
+.pdf-dropzone i {
+  color: var(--neutral-500);
+  margin-bottom: 8px;
+  transition: color 0.2s ease;
+}
+
+.pdf-dropzone:hover i, .pdf-dropzone.dragover i {
+  color: var(--primary);
+}
+
+.pdf-upload-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 10px;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+}
+
+.pdf-upload-item .filename {
+  font-weight: 600;
+  color: var(--neutral-900);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-upload-item .bank {
+  font-size: 10px;
+  color: var(--neutral-500);
+  margin-top: 2px;
+}
+
+.pdf-upload-item .meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pdf-upload-item .status-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.pdf-upload-item .status-badge.completed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.pdf-upload-item .status-badge.processing {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.pdf-upload-item .status-badge.failed {
+  background: #fef2f2;
+  color: #b91c1c;
+}

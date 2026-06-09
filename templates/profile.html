@@ -69,7 +69,7 @@
             <div class="timeline-item">
               <span class="timeline-dot success"></span>
               <div>
-                <div class="timeline-title">SMS parsing enabled</div>
+                <div class="timeline-title">PDF parsing enabled</div>
                 <div class="timeline-meta">2 hours ago · System</div>
               </div>
             </div>
@@ -255,47 +255,70 @@
 
           <div class="auto-card">
             <div class="auto-header">
-              <div class="auto-title"><i data-lucide="smartphone"></i>SMS Auto-Collection</div>
-              <span class="status-pill" id="smsStatusPill">Manual Only</span>
+              <div class="auto-title"><i data-lucide="file-text"></i>Manual PDF Statement Upload</div>
+              <span class="status-pill info" style="background: var(--primary-light); color: var(--primary);">Ingest PDF</span>
             </div>
             <div class="auto-grid grid-2">
               <div class="option-card">
                 <div class="option-header">
-                  <div class="option-title">Android Auto-Forward</div>
+                  <div class="option-title">Upload Statement</div>
                 </div>
-                <div class="setup-box">
-                  <label>Webhook URL</label>
-                  <div class="copy-row">
-                    <input id="profileSmsWebhook" readonly title="Webhook URL" />
-                    <button class="btn btn-secondary" id="copyProfileWebhook" type="button">Copy</button>
+                <div class="option-sub">Upload your bank e-statement to parse transactions and EMIs.</div>
+                
+                <form id="pdfUploadForm" class="profile-grid-spaced" style="margin-top: 12px;">
+                  <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Select Credit Card</label>
+                    <select id="pdfCardSelect" title="Select Credit Card" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; background: white; color: #1e293b;">
+                      <option value="">-- Loading Cards... --</option>
+                    </select>
                   </div>
-                </div>
-                <div class="setup-box">
-                  <label>Your API Key</label>
-                  <div class="copy-row">
-                    <input id="profileSmsKey" readonly title="API key" />
-                    <button class="btn btn-secondary" id="copyProfileKey" type="button">Copy</button>
+
+                  <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Select Bank</label>
+                    <select id="pdfBankName" title="Select Bank" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; background: white; color: #1e293b;">
+                      <option value="">-- Select Bank (Optional) --</option>
+                      <option value="HDFC Bank">HDFC Bank</option>
+                      <option value="ICICI Bank">ICICI Bank</option>
+                      <option value="Axis Bank">Axis Bank</option>
+                      <option value="SBI Bank">State Bank of India (SBI)</option>
+                      <option value="Kotak Bank">Kotak Mahindra Bank</option>
+                    </select>
                   </div>
-                </div>
-                <div class="setup-box">
-                  <label>User ID</label>
-                  <div class="copy-row">
-                    <input id="profileSmsUser" readonly title="User ID" />
-                    <button class="btn btn-secondary" id="copyProfileUser" type="button">Copy</button>
+                  
+                  <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">PDF Password (if encrypted)</label>
+                    <div class="auth-input-wrapper">
+                      <input class="auth-input" id="pdfPassword" type="password" placeholder="Password (Optional)" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; color: #1e293b;" />
+                      <button class="toggle-password" type="button" data-target="pdfPassword" title="Toggle password visibility">
+                        <i data-lucide="eye"></i>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div class="setup-tags" id="profileSmsFilters"></div>
+                  
+                  <div class="pdf-dropzone" id="pdfDropzone" style="margin-bottom: 16px;">
+                    <i data-lucide="upload-cloud" style="width: 32px; height: 32px; color: #64748B; margin-bottom: 8px;"></i>
+                    <div style="font-size: 13px; font-weight: 600; color: #334155;" id="pdfDropzoneText">Drag & drop PDF or click to browse</div>
+                    <div style="font-size: 11px; color: #64748B; margin-top: 4px;">Max size 10MB</div>
+                    <input type="file" id="pdfFile" accept=".pdf" style="display: none;" />
+                  </div>
+                  
+                  <button class="btn btn-primary" id="pdfUploadBtn" type="submit" style="width: 100%;" disabled>Upload & Parse PDF</button>
+                </form>
               </div>
-              <div class="option-card">
+              
+              <div class="option-card" style="display: flex; flex-direction: column;">
                 <div class="option-header">
-                  <div class="option-title">Manual Paste</div>
+                  <div class="option-title">Recent Uploads</div>
                 </div>
-                <textarea id="profileSmsRaw" placeholder="Paste SMS here..." class="profile-sms-raw"></textarea>
-                <button class="btn btn-primary" id="profileParseSms" type="button">Parse</button>
-                <div id="profileSmsPreview" class="glass-card profile-sms-preview"></div>
+                <div class="option-sub" style="margin-bottom: 12px;">History of statements uploaded and parsed.</div>
+                
+                <div id="pdfUploadsList" style="flex: 1; max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                  <div style="text-align: center; color: #64748b; padding: 24px 0; font-size: 13px;">No statement uploads yet.</div>
+                </div>
               </div>
             </div>
           </div>
+
 
           <div class="auto-card">
             <div class="auto-header">
