@@ -106,8 +106,6 @@ const syncEmailsFound = document.getElementById("syncEmailsFound");
 const syncTxnFound = document.getElementById("syncTxnFound");
 
 const pdfCardSelect = document.getElementById("pdfCardSelect");
-const pdfBankName = document.getElementById("pdfBankName");
-const pdfPassword = document.getElementById("pdfPassword");
 const pdfDropzone = document.getElementById("pdfDropzone");
 const pdfDropzoneText = document.getElementById("pdfDropzoneText");
 const pdfFile = document.getElementById("pdfFile");
@@ -487,38 +485,7 @@ const copyValue = async (value) => {
 	}
 };
 
-pdfCardSelect?.addEventListener("change", async () => {
-	const cardId = pdfCardSelect.value;
-	if (!cardId) {
-		if (pdfPassword) pdfPassword.value = "";
-		if (pdfBankName) pdfBankName.value = "";
-		return;
-	}
 
-	const selectedCardOption = pdfCardSelect.selectedOptions[0];
-	const bankNameVal = selectedCardOption.dataset.bank || "";
-	if (bankNameVal && pdfBankName) {
-		const options = Array.from(pdfBankName.options);
-		const matchedOption = options.find(opt => opt.value && (bankNameVal.toLowerCase().includes(opt.value.toLowerCase()) || opt.value.toLowerCase().includes(bankNameVal.toLowerCase())));
-		if (matchedOption) {
-			pdfBankName.value = matchedOption.value;
-		}
-	}
-
-	try {
-		const userId = getUserId();
-		const data = await apiFetch(`/api/v1/cards/${cardId}/statement-password?user_id=${userId}`);
-		if (data && data.password && pdfPassword) {
-			pdfPassword.value = data.password;
-			showToast("Fetched card statement password", "success");
-		} else if (pdfPassword) {
-			pdfPassword.value = "";
-		}
-	} catch (error) {
-		console.error("Failed to fetch card password:", error);
-		if (pdfPassword) pdfPassword.value = "";
-	}
-});
 
 pdfDropzone?.addEventListener("dragover", (e) => {
 	e.preventDefault();
@@ -583,18 +550,12 @@ pdfUploadForm?.addEventListener("submit", async (e) => {
 
 	const userId = getUserId();
 	const cardId = pdfCardSelect ? pdfCardSelect.value : "";
-	const bankName = pdfBankName ? pdfBankName.value : "";
-	const password = pdfPassword ? pdfPassword.value : "";
 
 	const formData = new FormData();
 	formData.append("file", file);
-	if (password) {
-		formData.append("password", password);
-	}
 
 	let uploadUrl = `/api/v1/pdf/upload?user_id=${userId}`;
 	if (cardId) uploadUrl += `&card_id=${cardId}`;
-	if (bankName) uploadUrl += `&bank_name=${encodeURIComponent(bankName)}`;
 
 	const originalBtnText = pdfUploadBtn.textContent;
 	try {

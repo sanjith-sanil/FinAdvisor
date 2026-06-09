@@ -52,6 +52,17 @@ async def upload_pdf(
     # Retrieve all user decryption passwords (stored card passwords + generated candidates)
     from app.services.emi_upsert_service import _get_user_decryption_passwords
     passwords = await _get_user_decryption_passwords(db, user_id)
+    
+    # Prioritize the password of the selected card if available
+    if card and card.statement_password_encrypted:
+        from app.services.crypto_service import decrypt_text
+        try:
+            card_pwd = decrypt_text(card.statement_password_encrypted)
+            if card_pwd:
+                passwords = [card_pwd] + [p for p in passwords if p != card_pwd]
+        except Exception:
+            pass
+
     if password:
         passwords = [password] + [p for p in passwords if p != password]
 
