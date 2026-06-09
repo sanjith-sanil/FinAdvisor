@@ -487,8 +487,6 @@ const copyValue = async (value) => {
 
 
 
-let selectedPdfFile = null;
-
 pdfDropzone?.addEventListener("dragover", (e) => {
 	e.preventDefault();
 	pdfDropzone.classList.add("dragover");
@@ -503,8 +501,7 @@ pdfDropzone?.addEventListener("drop", (e) => {
 	pdfDropzone.classList.remove("dragover");
 	const files = e.dataTransfer.files;
 	if (files.length > 0) {
-		selectedPdfFile = files[0];
-		handleSelectedPdf(selectedPdfFile);
+		handleSelectedPdf(files[0]);
 	}
 });
 
@@ -514,15 +511,13 @@ pdfDropzone?.addEventListener("click", () => {
 
 pdfFile?.addEventListener("change", () => {
 	if (pdfFile.files && pdfFile.files.length > 0) {
-		selectedPdfFile = pdfFile.files[0];
-		handleSelectedPdf(selectedPdfFile);
+		handleSelectedPdf(pdfFile.files[0]);
 	}
 });
 
 function handleSelectedPdf(file) {
 	if (!file.name.toLowerCase().endsWith(".pdf")) {
 		showToast("Only PDF statement files are allowed", "error");
-		selectedPdfFile = null;
 		if (pdfUploadBtn) pdfUploadBtn.disabled = true;
 		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
 		return;
@@ -531,7 +526,6 @@ function handleSelectedPdf(file) {
 	const maxBytes = 10 * 1024 * 1024; // 10MB
 	if (file.size > maxBytes) {
 		showToast("PDF file exceeds maximum limit of 10MB", "error");
-		selectedPdfFile = null;
 		if (pdfUploadBtn) pdfUploadBtn.disabled = true;
 		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
 		return;
@@ -548,7 +542,7 @@ function handleSelectedPdf(file) {
 pdfUploadForm?.addEventListener("submit", async (e) => {
 	e.preventDefault();
 	
-	const file = selectedPdfFile;
+	const file = pdfFile.files && pdfFile.files[0] ? pdfFile.files[0] : null;
 	if (!file) {
 		showToast("Please select a PDF file first", "error");
 		return;
@@ -577,7 +571,6 @@ pdfUploadForm?.addEventListener("submit", async (e) => {
 		showToast(`PDF Statement processed successfully! Parsed ${result.total_transactions_parsed || 0} transactions.`, "success");
 		
 		pdfUploadForm.reset();
-		selectedPdfFile = null;
 		if (pdfDropzoneText) pdfDropzoneText.textContent = "Drag & drop PDF or click to browse";
 		pdfUploadBtn.disabled = true;
 		
@@ -587,7 +580,7 @@ pdfUploadForm?.addEventListener("submit", async (e) => {
 		showToast(error.message || "Failed to upload and parse PDF", "error");
 	} finally {
 		pdfUploadBtn.textContent = originalBtnText;
-		if (selectedPdfFile) {
+		if (pdfFile.files && pdfFile.files.length > 0) {
 			pdfUploadBtn.disabled = false;
 		}
 	}

@@ -132,14 +132,17 @@ def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
     last_balance: float | None = None
 
     date_regex = re.compile(r"(\d{2}[/-]\d{2}[/-]\d{4}|\d{2}\s?[A-Za-z]{3}\s?\d{4}|\d{2}\s?[A-Za-z]+\s?\d{4})")
-    amount_regex = re.compile(r"([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)")
+    # Robust amount regex that doesn't split 4-digit numbers like years
+    amount_regex = re.compile(r"([0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?)")
     drcr_regex = re.compile(r"\b(Dr|Cr)\b", re.IGNORECASE)
 
     with _open_pdf_with_passwords(file_path, passwords) as pdf:
         for page in pdf.pages:
             text = page.extract_text() or ""
             for line in text.splitlines():
-                date_match = date_regex.search(line)
+                stripped = line.strip()
+                # Ensure the line starts with a date (filters out headers/summaries)
+                date_match = date_regex.match(stripped)
                 if not date_match:
                     continue
 
@@ -148,15 +151,27 @@ def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
                 if not txn_date:
                     continue
 
-                amounts = amount_regex.findall(line)
-                if len(amounts) < 2:
+                # Remove the date string first to prevent date numbers from matching as amounts
+                line_content = stripped.replace(date_str, "").strip()
+                amounts = amount_regex.findall(line_content)
+                if not amounts:
                     continue
 
-                balance = _clean_amount(amounts[-1])
-                amount_value = _clean_amount(amounts[-2])
+                if len(amounts) >= 2:
+                    balance = _clean_amount(amounts[-1])
+                    amount_value = _clean_amount(amounts[-2])
+                else:
+                    balance = None
+                    amount_value = _clean_amount(amounts[-1])
 
-                description = line.replace(date_str, "").strip()
-                txn_type = _detect_type(amounts[-2:], last_balance, balance)
+                # Construct clean description by removing matches of the amounts
+                description = line_content.strip()
+                for amt in amounts:
+                    description = description.replace(amt, "")
+                description = re.sub(r"\s+", " ", description).strip()
+                description = description.replace("Rs.", "").replace("Rs", "").strip()
+
+                txn_type = _detect_type(amounts[-2:] if len(amounts) >= 2 else amounts, last_balance, balance)
                 drcr_match = drcr_regex.search(line)
                 if drcr_match:
                     txn_type = TransactionType.credit if drcr_match.group(1).lower() == "cr" else TransactionType.debit
@@ -165,13 +180,14 @@ def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
                     {
                         "id": uuid.uuid4(),
                         "transaction_date": txn_date,
-                        "description": description,
+                        "description": description or line_content,
                         "amount": amount_value,
                         "balance_after": balance,
                         "transaction_type": txn_type,
                     }
                 )
-                last_balance = balance
+                if balance is not None:
+                    last_balance = balance
 
     return transactions
 
