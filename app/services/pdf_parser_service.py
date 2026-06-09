@@ -9,7 +9,10 @@ from pdfminer.pdfdocument import PDFPasswordIncorrect, PDFEncryptionError
 from app.models.enums import TransactionType
 
 
-_DATE_PATTERNS = ["%d/%m/%Y", "%d-%m-%Y", "%d %b %Y", "%d %B %Y"]
+_DATE_PATTERNS = [
+    "%d/%m/%Y", "%d-%m-%Y", "%d %b %Y", "%d %B %Y",
+    "%d-%b-%Y", "%d-%B-%Y", "%d/%b/%Y", "%d/%B/%Y"
+]
 
 
 def _parse_date(value: str) -> datetime.datetime | None:
