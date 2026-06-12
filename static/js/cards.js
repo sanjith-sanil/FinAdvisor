@@ -1342,7 +1342,6 @@ function prefillCardForm(card) {
     emiTenure: card.emi_tenure_months,
     interestRate: card.emi_interest_rate,
     monthlyEmi: card.monthly_emi_amount,
-    colorTheme: card.color_theme,
     annualFee: card.annual_fee,
     rewardPoints: card.reward_points_balance,
   };
@@ -1392,7 +1391,7 @@ function renderModalPreview() {
   const month = String(document.getElementById("expiryMonth")?.value || "01").padStart(2, "0");
   const year = String(document.getElementById("expiryYear")?.value || "2030").slice(-2);
 
-  modalCardPreview.className = `modal-card-preview bank-card ${getThemeClass({ bank_name: bank, color_theme: document.getElementById("colorTheme")?.value })}`;
+  modalCardPreview.className = `modal-card-preview bank-card ${getThemeClass({ bank_name: bank })}`;
   modalCardPreview.innerHTML = `
     <div class="card-holographic"></div>
     <span class="card-bank-name">${bank}</span>
@@ -1542,22 +1541,12 @@ function initModalEvents() {
     "cardLast4",
     "expiryMonth",
     "expiryYear",
-    "colorTheme",
   ].forEach((id) => {
     document.getElementById(id)?.addEventListener("input", renderModalPreview);
     document.getElementById(id)?.addEventListener("change", renderModalPreview);
   });
 
   document.getElementById("cardType")?.addEventListener("change", handleCardTypeChange);
-
-  const bankName = document.getElementById("bankName");
-  const colorTheme = document.getElementById("colorTheme");
-  bankName?.addEventListener("change", () => {
-    if (colorTheme) {
-      colorTheme.value = inferThemeFromBank(bankName.value);
-    }
-    renderModalPreview();
-  });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
