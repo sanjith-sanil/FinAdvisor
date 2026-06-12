@@ -637,6 +637,18 @@ async function loadPersonalDetails() {
 			form.elements["date_of_birth"].value = user.date_of_birth || "";
 			form.elements["address"].value = user.address || "";
 		}
+		if (user.created_at) {
+			const date = new Date(user.created_at);
+			const formattedDate = date.toLocaleDateString("en-US", {
+				year: "numeric",
+				month: "long",
+				day: "numeric",
+			});
+			const memberSinceEl = document.getElementById("memberSince");
+			if (memberSinceEl) {
+				memberSinceEl.textContent = `Member since: ${formattedDate}`;
+			}
+		}
 	} catch (err) {
 		console.error("Failed to load personal details:", err);
 	}
