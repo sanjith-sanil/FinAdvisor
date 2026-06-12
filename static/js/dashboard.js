@@ -407,10 +407,36 @@ async function loadDashboardData() {
     await loadRecentTransactions(userId);
     loadEmiAnalysis(summary);
     renderAlerts(summary.alerts || []);
+    populateManualCardDropdown(summary);
   } catch (err) {
     console.error("Dashboard load error:", err);
     showToast("Failed to load dashboard data", "error");
   }
+}
+
+function populateManualCardDropdown(summary) {
+  const dropdown = document.getElementById("m-total-outstanding");
+  if (!dropdown) return;
+
+  dropdown.innerHTML = "";
+
+  const totalOutstanding = summary.total_outstanding || 0;
+  
+  // 1. Add option for Total Outstanding Balance of all cards
+  const totalOpt = document.createElement("option");
+  totalOpt.value = totalOutstanding;
+  totalOpt.textContent = `Total Outstanding Balance of all cards (Rs${totalOutstanding.toLocaleString("en-IN")})`;
+  dropdown.appendChild(totalOpt);
+
+  // 2. Add options for individual cards
+  const cards = summary.credit_metrics?.per_card || [];
+  cards.forEach((card) => {
+    const opt = document.createElement("option");
+    opt.value = card.current_balance || 0;
+    const last4Str = card.card_last4 ? ` ••••${card.card_last4}` : "";
+    opt.textContent = `Outstanding of ${card.bank_name}${last4Str} (Rs${(card.current_balance || 0).toLocaleString("en-IN")})`;
+    dropdown.appendChild(opt);
+  });
 }
 
 function calculateManual() {

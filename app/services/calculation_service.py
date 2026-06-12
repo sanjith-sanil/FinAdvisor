@@ -253,6 +253,7 @@ async def credit_card_metrics(session: AsyncSession, user_id: str) -> dict:
             {
                 "card_id": str(card.id),
                 "bank_name": card.bank_name,
+                "card_last4": card.card_last4,
                 "current_balance": round(balance, 2),
                 "credit_limit": round(limit_val, 2),
                 "credit_utilization_ratio": round(utilization, 2),
