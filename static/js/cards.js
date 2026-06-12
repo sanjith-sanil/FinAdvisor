@@ -1345,11 +1345,6 @@ function prefillCardForm(card) {
     colorTheme: card.color_theme,
     annualFee: card.annual_fee,
     rewardPoints: card.reward_points_balance,
-    rewardRate: card.reward_points_rate,
-    cashbackRate: card.cashback_rate,
-    loungeVisits: card.lounge_visits_per_quarter,
-    joiningFee: card.joining_fee,
-    notes: card.notes,
   };
 
   Object.entries(fields).forEach(([id, value]) => {
@@ -1361,12 +1356,6 @@ function prefillCardForm(card) {
 
   const statementPassword = document.getElementById("statementPassword");
   if (statementPassword) statementPassword.value = "";
-
-  const loungeAccess = document.getElementById("loungeAccess");
-  if (loungeAccess) loungeAccess.value = card.lounge_access ? "true" : "false";
-
-  const fuelWaiver = document.getElementById("fuelWaiver");
-  if (fuelWaiver) fuelWaiver.value = card.fuel_surcharge_waiver ? "true" : "false";
 
   handleCardTypeChange();
 }
