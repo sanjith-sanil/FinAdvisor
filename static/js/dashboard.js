@@ -399,15 +399,60 @@ async function loadDashboardData() {
 
     const summary = await summaryRes.json();
 
-    renderSummaryCards(summary);
-    renderHealthScore(summary.financial_health_score || 50, summary.score_label || "Fair", summary.score_color || "#F59E0B");
-    renderCategoryChart(summary.spending?.category_breakdown || {});
-    loadMonthlyTrendChart(summary);
-    loadCardUtilization(summary);
-    await loadRecentTransactions(userId);
-    loadEmiAnalysis(summary);
-    renderAlerts(summary.alerts || []);
-    populateManualCardDropdown(summary);
+    // Populate the dropdown first as it is critical and fast
+    try {
+      populateManualCardDropdown(summary);
+    } catch (e) {
+      console.error("Error populating manual card dropdown:", e);
+    }
+
+    try {
+      renderSummaryCards(summary);
+    } catch (e) {
+      console.error("Error rendering summary cards:", e);
+    }
+
+    try {
+      renderHealthScore(summary.financial_health_score || 50, summary.score_label || "Fair", summary.score_color || "#F59E0B");
+    } catch (e) {
+      console.error("Error rendering health score:", e);
+    }
+
+    try {
+      renderCategoryChart(summary.spending?.category_breakdown || {});
+    } catch (e) {
+      console.error("Error rendering category chart:", e);
+    }
+
+    try {
+      loadMonthlyTrendChart(summary);
+    } catch (e) {
+      console.error("Error loading monthly trend chart:", e);
+    }
+
+    try {
+      loadCardUtilization(summary);
+    } catch (e) {
+      console.error("Error loading card utilization:", e);
+    }
+
+    try {
+      await loadRecentTransactions(userId);
+    } catch (e) {
+      console.error("Error loading recent transactions:", e);
+    }
+
+    try {
+      loadEmiAnalysis(summary);
+    } catch (e) {
+      console.error("Error loading EMI analysis:", e);
+    }
+
+    try {
+      renderAlerts(summary.alerts || []);
+    } catch (e) {
+      console.error("Error rendering alerts:", e);
+    }
   } catch (err) {
     console.error("Dashboard load error:", err);
     showToast("Failed to load dashboard data", "error");
@@ -425,7 +470,7 @@ function populateManualCardDropdown(summary) {
   // 1. Add option for Total Outstanding Balance of all cards
   const totalOpt = document.createElement("option");
   totalOpt.value = totalOutstanding;
-  totalOpt.textContent = `Total Outstanding Balance of all cards (Rs${totalOutstanding.toLocaleString("en-IN")})`;
+  totalOpt.textContent = "Total Outstanding Balance";
   dropdown.appendChild(totalOpt);
 
   // 2. Add options for individual cards
