@@ -761,12 +761,31 @@ function initSecurityHandlers() {
 }
 
 
+async function loadProfileStats() {
+	const userId = getUserId();
+	try {
+		const stats = await apiFetch(`/api/v1/users/${userId}/stats`);
+		const cardCountEl = document.getElementById("cardCount");
+		const transactionCountEl = document.getElementById("transactionCount");
+		if (cardCountEl) {
+			cardCountEl.textContent = stats.cards_count;
+		}
+		if (transactionCountEl) {
+			transactionCountEl.textContent = stats.transactions_count;
+		}
+	} catch (err) {
+		console.error("Failed to load profile stats:", err);
+	}
+}
+
+
 if (document.getElementById("autoCollectionTab")) {
 	loadEmailStatus();
 	loadUserCards();
 	loadPdfUploads();
 	loadBankDomains();
 	loadPersonalDetails();
+	loadProfileStats();
 	initSecurityHandlers();
 }
 

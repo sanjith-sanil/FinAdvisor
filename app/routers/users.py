@@ -39,6 +39,26 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Us
     return user
 
 
+@router.get("/{user_id}/stats")
+async def get_user_stats(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+    from sqlalchemy import func
+    from app.models.card import Card
+    from app.models.transaction import Transaction
+    
+    card_count = (await db.execute(
+        select(func.count(Card.id)).where(Card.user_id == user_id, Card.is_active.is_(True))
+    )).scalar() or 0
+    
+    txn_count = (await db.execute(
+        select(func.count(Transaction.id)).where(Transaction.user_id == user_id)
+    )).scalar() or 0
+    
+    return {
+        "cards_count": card_count,
+        "transactions_count": txn_count
+    }
+
+
 @router.put("/{user_id}", response_model=UserOut)
 async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession = Depends(get_db)) -> UserOut:
     user = await db.get(User, user_id)
