@@ -74,13 +74,13 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession 
 
 
 @router.delete("/{user_id}")
-async def soft_delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def permanent_delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.updated_at = datetime.datetime.now(datetime.timezone.utc)
+    await db.delete(user)
     await db.commit()
-    return {"status": "soft-deleted"}
+    return {"status": "deleted", "message": "User deleted permanently"}
 
 
 @router.post("/{user_id}/avatar", response_model=UserOut)
