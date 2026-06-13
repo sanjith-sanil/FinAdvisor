@@ -1111,6 +1111,18 @@ async function reactivateCard(cardId) {
 }
 
 async function confirmDeleteCard(cardId) {
+  const card = allCards.find((c) => c.id === cardId);
+  if (card && card.is_active !== false) {
+    await showConfirmDialog(
+      "Deactivate Card First",
+      "Please deactivate the card first and then delete it later.",
+      "Okay",
+      "warning",
+      true
+    );
+    return;
+  }
+
   const confirmed = await showConfirmDialog(
     "Delete Card Permanently",
     "This will permanently delete the card and ALL its linked benefits. This cannot be undone. Are you sure?",
@@ -1150,9 +1162,9 @@ async function confirmDeleteCard(cardId) {
   }
 }
 
-function showConfirmDialog(title, message, confirmText, type = "warning") {
+function showConfirmDialog(title, message, confirmText, type = "warning", singleButton = false) {
   return new Promise((resolve) => {
-    const colors = { warning: "#F59E0B", danger: "#EF4444", info: "#2563EB" };
+    const colors = { warning: "#F59E0B", danger: "#EF4444", info: "#2563EB", success: "#10B981" };
 
     const existing = document.getElementById("confirm-dialog");
     if (existing) existing.remove();
@@ -1171,17 +1183,19 @@ function showConfirmDialog(title, message, confirmText, type = "warning") {
         </div>
         <p style="font-size:13px;color:#475569;margin:0 0 20px;line-height:1.5">${message}</p>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button id="dialog-cancel" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:#475569;font-weight:500">Cancel</button>
+          ${singleButton ? "" : '<button id="dialog-cancel" style="background:#f1f5f9;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:#475569;font-weight:500">Cancel</button>'}
           <button id="dialog-confirm" style="background:${colors[type]};border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:white;font-weight:600">${confirmText}</button>
         </div>
       </div>`;
 
     document.body.appendChild(dialog);
 
-    document.getElementById("dialog-cancel").onclick = () => {
-      dialog.remove();
-      resolve(false);
-    };
+    if (!singleButton) {
+      document.getElementById("dialog-cancel").onclick = () => {
+        dialog.remove();
+        resolve(false);
+      };
+    }
     document.getElementById("dialog-confirm").onclick = () => {
       dialog.remove();
       resolve(true);
