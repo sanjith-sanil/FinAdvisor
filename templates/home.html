@@ -20,42 +20,79 @@
       </div>
     </div>
     <div class="mockup-wrap" style="display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; max-width: 420px; margin: 0 auto;">
-      <!-- Interactive Flip Card -->
+      <!-- Premium Flip Card -->
       <div class="home-card-flip">
         <div class="card-flipper">
           <!-- Card Front -->
-          <div class="card-face card-theme-default" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.5px;">FINADVISOR</span>
-              <span style="font-size: 10px; font-weight: 500; opacity: 0.8; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px;">SELECT</span>
-            </div>
-            <div style="width: 36px; height: 24px; background: #fbbf24; border-radius: 4px; margin-top: 10px; opacity: 0.85;"></div>
-            <div style="font-size: 16px; font-family: monospace; letter-spacing: 2px; margin-top: 12px;">•••• •••• •••• 8888</div>
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;">
-              <div>
-                <div style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Card Holder</div>
-                <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.5px;">DEMO USER</div>
+          <div class="card-face home-card-front">
+            <div class="hc-glow hc-glow-a"></div>
+            <div class="hc-glow hc-glow-b"></div>
+            <div class="hc-shimmer"></div>
+            <div class="hc-content">
+              <div class="hc-top-row">
+                <div>
+                  <div class="hc-brand">FINADVISOR</div>
+                  <div class="hc-tier">PLATINUM SELECT</div>
+                </div>
+                <svg class="hc-nfc" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <path d="M3 11C3 6.58 6.58 3 11 3" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M6.5 11C6.5 8.51 8.51 6.5 11 6.5" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M10 11C10 10.45 10.45 10 11 10" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="11" cy="11" r="1.5" fill="rgba(255,255,255,0.7)"/>
+                </svg>
               </div>
-              <div>
-                <div style="font-size: 8px; opacity: 0.6; text-transform: uppercase;">Valid Thru</div>
-                <div style="font-size: 11px; font-weight: 600;">12/29</div>
+              <div class="hc-chip">
+                <div class="hc-chip-inner">
+                  <div class="hc-chip-line-h"></div>
+                  <div class="hc-chip-line-v"></div>
+                </div>
+              </div>
+              <div class="hc-number">•••• &nbsp;•••• &nbsp;•••• &nbsp;8888</div>
+              <div class="hc-bottom-row">
+                <div>
+                  <div class="hc-label">Card Holder</div>
+                  <div class="hc-value">DEMO USER</div>
+                </div>
+                <div>
+                  <div class="hc-label">Valid Thru</div>
+                  <div class="hc-value">12/29</div>
+                </div>
+                <div class="hc-network">
+                  <div class="hc-nc1"></div>
+                  <div class="hc-nc2"></div>
+                </div>
               </div>
             </div>
           </div>
           <!-- Card Back -->
-          <div class="card-face card-theme-default" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 0; display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="height: 30px; background: #000; width: 100%; margin-top: 16px;"></div>
-            <div style="padding: 12px 20px 20px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 9px;">
-                <span style="opacity: 0.6;">LIMIT UTILIZATION</span>
-                <span id="homeCardUsagePct" style="font-weight: 600; color: #fbbf24;">0% used</span>
+          <div class="card-face card-back home-card-back">
+            <div class="hc-glow hc-glow-c"></div>
+            <div class="hc-glow hc-glow-d"></div>
+            <div class="hc-stripe"></div>
+            <div class="hc-back-body">
+              <div class="hc-util-row">
+                <span class="hc-util-lbl">Limit Utilization</span>
+                <span id="homeCardUsagePct" class="hc-util-pct">0% used</span>
               </div>
-              <div style="height: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); overflow: hidden; margin-bottom: 12px;">
-                <div id="homeCardUsageBar" style="width: 0%; height: 100%; background: #fbbf24; transition: width 0.6s ease;"></div>
+              <div class="hc-bar-bg">
+                <div id="homeCardUsageBar" class="hc-bar-fill"></div>
               </div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.8;">
-                <span>Available: <span id="homeCardAvailText">₹0</span></span>
-                <span>Limit: <span id="homeCardLimitText">₹0</span></span>
+              <div class="hc-stats-row">
+                <div>
+                  <div class="hc-slabel">Available</div>
+                  <div id="homeCardAvailText" class="hc-sval">₹0</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="hc-slabel">Total Limit</div>
+                  <div id="homeCardLimitText" class="hc-sval">₹0</div>
+                </div>
+              </div>
+              <div class="hc-cvv-row">
+                <div class="hc-cvv">CVV ● ● ●</div>
+                <div class="hc-network hc-network-sm">
+                  <div class="hc-nc1"></div>
+                  <div class="hc-nc2"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -81,26 +118,13 @@
         <div style="height: 6px; border-radius: 6px; background: var(--neutral-100); overflow: hidden; margin-bottom: 16px;">
           <div id="homeUsageBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.6s ease;"></div>
         </div>
-        
         <!-- Glassmorphic transaction sub-panel -->
         <div style="background: rgba(0,0,0,0.02); border-radius: 10px; padding: 12px; border: 1px solid var(--neutral-100);">
           <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 8px; letter-spacing: 0.5px;">Recent Transactions</div>
-          <div id="homeTransactionsList" style="font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--neutral-100);">
-              <span>Swiggy</span>
-              <span style="color: var(--danger); font-weight: 600;">-₹450</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--neutral-100);">
-              <span>Amazon</span>
-              <span style="color: var(--danger); font-weight: 600;">-₹1,299</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-              <span>Salary</span>
-              <span style="color: var(--success); font-weight: 600;">+₹55,000</span>
-            </div>
-          </div>
+          <div id="homeTransactionsList" style="font-size: 11px; display: flex; flex-direction: column; gap: 6px;"></div>
         </div>
       </div>
+
     </div>
   </div>
 
