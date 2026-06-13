@@ -263,8 +263,8 @@
                 
                 <form id="pdfUploadForm" class="profile-grid-spaced" style="margin-top: 12px;">
                   <div style="margin-bottom: 12px;">
-                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Select Credit Card</label>
-                    <select id="pdfCardSelect" title="Select Credit Card" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; background: white; color: #1e293b;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--neutral-600);">Select Credit Card</label>
+                    <select id="pdfCardSelect" title="Select Credit Card" style="width: 100%; padding: 8px; border: 1px solid var(--neutral-100); border-radius: 6px; font-size: 13px; background: var(--neutral-50); color: var(--neutral-900);">
                       <option value="">-- Loading Cards... --</option>
                     </select>
                   </div>
@@ -272,9 +272,9 @@
 
                   
                   <div class="pdf-dropzone" id="pdfDropzone" style="margin-bottom: 16px;">
-                    <i data-lucide="upload-cloud" style="width: 32px; height: 32px; color: #64748B; margin-bottom: 8px;"></i>
-                    <div style="font-size: 13px; font-weight: 600; color: #334155;" id="pdfDropzoneText">Drag & drop PDF or click to browse</div>
-                    <div style="font-size: 11px; color: #64748B; margin-top: 4px;">Max size 10MB</div>
+                    <i data-lucide="upload-cloud" style="width: 32px; height: 32px; color: var(--neutral-500); margin-bottom: 8px;"></i>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--neutral-900);" id="pdfDropzoneText">Drag & drop PDF or click to browse</div>
+                    <div style="font-size: 11px; color: var(--neutral-500); margin-top: 4px;">Max size 10MB</div>
                     <input type="file" id="pdfFile" accept=".pdf" style="display: none;" />
                   </div>
                   
@@ -310,22 +310,22 @@
                 
                 <div class="grid grid-2" style="gap: 12px; margin-bottom: 12px;">
                   <div>
-                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Sender Email</label>
-                    <select id="profileTestEmailSender" title="Sender Email" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; background: white; color: #1e293b;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--neutral-600);">Sender Email</label>
+                    <select id="profileTestEmailSender" title="Sender Email" style="width: 100%; padding: 8px; border: 1px solid var(--neutral-100); border-radius: 6px; font-size: 13px; background: var(--neutral-50); color: var(--neutral-900);">
                       <option value="alerts@hdfcbank.net">alerts@hdfcbank.net (HDFC Bank)</option>
                       <option value="credit.cards@icicibank.com">credit.cards@icicibank.com (ICICI Bank)</option>
                       <option value="alerts@axisbank.com">alerts@axisbank.com (Axis Bank)</option>
                     </select>
                   </div>
                   <div>
-                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Subject</label>
-                    <input id="profileTestEmailSubject" placeholder="e.g. Smart EMI Loan Summary" value="Smart EMI Loan Summary" style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; color: #1e293b;" />
+                    <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--neutral-600);">Subject</label>
+                    <input id="profileTestEmailSubject" placeholder="e.g. Smart EMI Loan Summary" value="Smart EMI Loan Summary" style="width: 100%; padding: 8px; border: 1px solid var(--neutral-100); border-radius: 6px; font-size: 13px; background: var(--neutral-50); color: var(--neutral-900);" />
                   </div>
                 </div>
                 
                 <div style="margin-bottom: 12px;">
-                  <label style="display: block; font-size: 12px; margin-bottom: 4px; color: #475569;">Email Body</label>
-                  <textarea id="profileTestEmailBody" placeholder="Paste full email body here..." class="profile-sms-raw" style="min-height: 120px; width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 13px; resize: vertical; color: #1e293b;"></textarea>
+                  <label style="display: block; font-size: 12px; margin-bottom: 4px; color: var(--neutral-600);">Email Body</label>
+                  <textarea id="profileTestEmailBody" placeholder="Paste full email body here..." class="profile-sms-raw" style="min-height: 120px; width: 100%; padding: 8px; border: 1px solid var(--neutral-100); border-radius: 6px; font-size: 13px; resize: vertical; background: var(--neutral-50); color: var(--neutral-900);"></textarea>
                 </div>
                 
                 <button class="btn btn-primary" id="profileParseEmail" type="button" style="width: 100%;">Parse & Ingest</button>
@@ -336,7 +336,7 @@
                   <div class="option-title">Parsing Output & Guide</div>
                 </div>
                 <div class="option-sub" style="margin-bottom: 12px;">Ensure you have created a active <strong>Credit Card</strong> under your profile matching the bank name and last 4 digits (e.g. ending 5678 or 4321) to match the parsed loan details.</div>
-                <div id="profileEmailPreview" class="glass-card profile-sms-preview" style="min-height: 160px; max-height: 250px; overflow-y: auto; display: none; padding: 12px; font-family: monospace; font-size: 12px; background: rgba(15, 23, 42, 0.05); border-radius: 6px; border: 1px dashed #cbd5e1; white-space: pre-wrap;"></div>
+                <div id="profileEmailPreview" class="glass-card profile-sms-preview" style="min-height: 160px; max-height: 250px; overflow-y: auto; display: none; padding: 12px; font-family: monospace; font-size: 12px; background: var(--neutral-50); border-radius: 6px; border: 1px dashed var(--neutral-200); white-space: pre-wrap; color: var(--neutral-900);"></div>
               </div>
             </div>
           </div>

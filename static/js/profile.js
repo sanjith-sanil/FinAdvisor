@@ -391,7 +391,7 @@ async function loadPdfUploads() {
 		const userId = getUserId();
 		const uploads = await apiFetch(`/api/v1/pdf/uploads?user_id=${userId}`);
 		if (!uploads || uploads.length === 0) {
-			pdfUploadsList.innerHTML = '<div style="text-align: center; color: #64748b; padding: 24px 0; font-size: 13px;">No statement uploads yet.</div>';
+			pdfUploadsList.innerHTML = '<div style="text-align: center; color: var(--neutral-500); padding: 24px 0; font-size: 13px;">No statement uploads yet.</div>';
 			return;
 		}
 		
@@ -414,14 +414,14 @@ async function loadPdfUploads() {
 					</div>
 					<div class="meta">
 						<span class="status-badge ${status}">${statusLabel}</span>
-						<div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${dateStr}</div>
+						<div style="font-size: 10px; color: var(--neutral-500); margin-top: 2px;">${dateStr}</div>
 					</div>
 				</div>
 			`;
 		}).join("");
 	} catch (error) {
 		console.error("Failed to load pdf uploads:", error);
-		pdfUploadsList.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 24px 0; font-size: 13px;">Failed to load upload history</div>';
+		pdfUploadsList.innerHTML = '<div style="text-align: center; color: var(--danger); padding: 24px 0; font-size: 13px;">Failed to load upload history</div>';
 	}
 }
 

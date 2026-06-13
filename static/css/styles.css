@@ -2506,6 +2506,22 @@ body {
   font-weight: 600;
 }
 
+.badge-used {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.badge-avail {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.badge-cards {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+}
+
+
 .glass-card {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--neutral-100);
@@ -4737,7 +4753,7 @@ small {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
   font-size: 24px;
   font-weight: 700;
@@ -4746,7 +4762,7 @@ small {
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 
 .avatar-overlay {
@@ -4864,7 +4880,7 @@ small {
   width: 40px;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #2563eb, #0ea5e9);
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
 }
 
 .profile-timeline {
@@ -6959,4 +6975,303 @@ body.theme-warmcharcoal .trend-pill.positive {
 
 body.theme-warmcharcoal .trend-pill.negative {
   color: var(--danger) !important;
+}
+
+/* --- Graphite Theme Specific Overrides --- */
+body.theme-graphite .mockup-card {
+  background: rgba(39, 39, 42, 0.65);
+  border-color: rgba(63, 63, 70, 0.4);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-graphite .mockup-float {
+  background: rgba(39, 39, 42, 0.6);
+  border-color: rgba(63, 63, 70, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-graphite .badge-used {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #f59e0b !important;
+}
+
+body.theme-graphite .badge-avail {
+  background: rgba(74, 222, 128, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+body.theme-graphite .badge-cards {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #3b82f6 !important;
+}
+
+body.theme-graphite .profile-rail {
+  background: rgba(39, 39, 42, 0.85);
+  border-color: rgba(63, 63, 70, 0.5);
+}
+
+body.theme-graphite .profile-hero,
+body.theme-graphite .profile-timeline {
+  background: rgba(39, 39, 42, 0.85);
+  border-color: rgba(63, 63, 70, 0.5);
+}
+
+body.theme-graphite .profile-tabs {
+  background: rgba(9, 9, 11, 0.9);
+  border-color: rgba(63, 63, 70, 0.4);
+}
+
+body.theme-graphite .profile-tab {
+  color: var(--neutral-500);
+}
+
+body.theme-graphite .profile-tab:hover {
+  color: var(--neutral-900);
+}
+
+body.theme-graphite .profile-tab.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+body.theme-graphite .profile-panel {
+  background: rgba(39, 39, 42, 0.85);
+  border-color: rgba(63, 63, 70, 0.5);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+body.theme-graphite .auto-card,
+body.theme-graphite .profile-panel .auto-card {
+  background: rgba(24, 24, 27, 0.95);
+  border-color: rgba(63, 63, 70, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-graphite .option-card,
+body.theme-graphite .profile-panel .option-card {
+  background: #27272a;
+  border-color: rgba(63, 63, 70, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-graphite .option-sub {
+  color: var(--neutral-500) !important;
+}
+
+body.theme-graphite .profile-nested {
+  background: rgba(39, 39, 42, 0.5);
+  border-color: rgba(63, 63, 70, 0.4);
+}
+
+body.theme-graphite .auto-log {
+  background: #18181b;
+  border-color: rgba(63, 63, 70, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-graphite .bank-domain-groups {
+  background: #27272a;
+  border-color: rgba(63, 63, 70, 0.4);
+}
+
+body.theme-graphite .bank-domain-group-title {
+  background: #18181b;
+  border-color: rgba(63, 63, 70, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-graphite .bank-domain-row {
+  border-top-color: rgba(63, 63, 70, 0.3);
+}
+
+body.theme-graphite .bank-domain-name {
+  color: var(--neutral-900);
+}
+
+body.theme-graphite .bank-domain-pill {
+  background: #18181b;
+  border-color: rgba(63, 63, 70, 0.5);
+  color: var(--neutral-500);
+}
+
+body.theme-graphite .bank-domain-stats {
+  background: #18181b;
+  border-color: rgba(63, 63, 70, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-graphite .pdf-dropzone {
+  background: rgba(39, 39, 42, 0.3);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+body.theme-graphite .pdf-upload-item {
+  background: #27272a;
+  border-color: rgba(63, 63, 70, 0.4);
+}
+
+body.theme-graphite .status-badge.completed {
+  background: rgba(74, 222, 128, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+body.theme-graphite .status-badge.processing {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+}
+
+body.theme-graphite .status-badge.failed {
+  background: rgba(248, 113, 113, 0.15) !important;
+  color: #f87171 !important;
+}
+
+
+/* --- Warm Charcoal Theme Specific Overrides --- */
+body.theme-warmcharcoal .mockup-card {
+  background: rgba(41, 37, 36, 0.65);
+  border-color: rgba(61, 53, 48, 0.4);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-warmcharcoal .mockup-float {
+  background: rgba(41, 37, 36, 0.6);
+  border-color: rgba(61, 53, 48, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-warmcharcoal .badge-used {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #f59e0b !important;
+}
+
+body.theme-warmcharcoal .badge-avail {
+  background: rgba(74, 222, 128, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+body.theme-warmcharcoal .badge-cards {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #f59e0b !important;
+}
+
+body.theme-warmcharcoal .profile-rail {
+  background: rgba(41, 37, 36, 0.85);
+  border-color: rgba(61, 53, 48, 0.5);
+}
+
+body.theme-warmcharcoal .profile-hero,
+body.theme-warmcharcoal .profile-timeline {
+  background: rgba(41, 37, 36, 0.85);
+  border-color: rgba(61, 53, 48, 0.5);
+}
+
+body.theme-warmcharcoal .profile-tabs {
+  background: rgba(18, 17, 16, 0.9);
+  border-color: rgba(61, 53, 48, 0.4);
+}
+
+body.theme-warmcharcoal .profile-tab {
+  color: var(--neutral-500);
+}
+
+body.theme-warmcharcoal .profile-tab:hover {
+  color: var(--neutral-900);
+}
+
+body.theme-warmcharcoal .profile-tab.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+body.theme-warmcharcoal .profile-panel {
+  background: rgba(41, 37, 36, 0.85);
+  border-color: rgba(61, 53, 48, 0.5);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+body.theme-warmcharcoal .auto-card,
+body.theme-warmcharcoal .profile-panel .auto-card {
+  background: rgba(28, 25, 22, 0.95);
+  border-color: rgba(61, 53, 48, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.theme-warmcharcoal .option-card,
+body.theme-warmcharcoal .profile-panel .option-card {
+  background: #292524;
+  border-color: rgba(61, 53, 48, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-warmcharcoal .option-sub {
+  color: var(--neutral-500) !important;
+}
+
+body.theme-warmcharcoal .profile-nested {
+  background: rgba(41, 37, 36, 0.5);
+  border-color: rgba(61, 53, 48, 0.4);
+}
+
+body.theme-warmcharcoal .auto-log {
+  background: #1c1917;
+  border-color: rgba(61, 53, 48, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-warmcharcoal .bank-domain-groups {
+  background: #292524;
+  border-color: rgba(61, 53, 48, 0.4);
+}
+
+body.theme-warmcharcoal .bank-domain-group-title {
+  background: #1c1917;
+  border-color: rgba(61, 53, 48, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-warmcharcoal .bank-domain-row {
+  border-top-color: rgba(61, 53, 48, 0.3);
+}
+
+body.theme-warmcharcoal .bank-domain-name {
+  color: var(--neutral-900);
+}
+
+body.theme-warmcharcoal .bank-domain-pill {
+  background: #1c1917;
+  border-color: rgba(61, 53, 48, 0.5);
+  color: var(--neutral-500);
+}
+
+body.theme-warmcharcoal .bank-domain-stats {
+  background: #1c1917;
+  border-color: rgba(61, 53, 48, 0.4);
+  color: var(--neutral-500);
+}
+
+body.theme-warmcharcoal .pdf-dropzone {
+  background: rgba(41, 37, 36, 0.3);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+body.theme-warmcharcoal .pdf-upload-item {
+  background: #292524;
+  border-color: rgba(61, 53, 48, 0.4);
+}
+
+body.theme-warmcharcoal .status-badge.completed {
+  background: rgba(74, 222, 128, 0.15) !important;
+  color: #4ade80 !important;
+}
+
+body.theme-warmcharcoal .status-badge.processing {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+}
+
+body.theme-warmcharcoal .status-badge.failed {
+  background: rgba(248, 113, 113, 0.15) !important;
+  color: #f87171 !important;
 }
