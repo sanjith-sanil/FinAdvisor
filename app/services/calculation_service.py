@@ -150,7 +150,9 @@ async def _sum_transactions(session: AsyncSession, user_id, start: datetime.date
     if card_id:
         filters.append(Transaction.card_id == card_id)
 
+    from app.models.transaction import scope_active_transactions
     stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(and_(*filters))
+    stmt = scope_active_transactions(stmt)
     return safe_float((await session.execute(stmt)).scalar_one())
 
 
@@ -177,6 +179,7 @@ async def spending_analytics(session: AsyncSession, user_id: str) -> dict:
     if total_spent_last_month > 0:
         mom_change = safe_div(total_spent_this_month - total_spent_last_month, total_spent_last_month) * 100
 
+    from app.models.transaction import scope_active_transactions
     category_stmt = (
         select(Transaction.merchant_category, func.coalesce(func.sum(Transaction.amount), 0))
         .where(
@@ -185,9 +188,8 @@ async def spending_analytics(session: AsyncSession, user_id: str) -> dict:
             Transaction.transaction_date >= start_month,
             Transaction.transaction_date < end_month,
         )
-        .group_by(Transaction.merchant_category)
     )
-
+    category_stmt = scope_active_transactions(category_stmt).group_by(Transaction.merchant_category)
     categories = (await session.execute(category_stmt)).all()
     category_breakdown = {name or "Other": safe_float(total) for name, total in categories}
 
@@ -206,15 +208,15 @@ async def spending_breakdown(session: AsyncSession, user_id: str, period: str) -
         period = "monthly"
 
     trunc_unit = {"monthly": "month", "weekly": "week", "yearly": "year"}[period]
+    from app.models.transaction import scope_active_transactions
     stmt = (
         select(
             func.date_trunc(trunc_unit, Transaction.transaction_date).label("bucket"),
             func.coalesce(func.sum(Transaction.amount), 0).label("total"),
         )
         .where(Transaction.user_id == user_id, Transaction.transaction_type == TransactionType.debit)
-        .group_by("bucket")
-        .order_by("bucket")
     )
+    stmt = scope_active_transactions(stmt).group_by("bucket").order_by("bucket")
     rows = (await session.execute(stmt)).all()
 
     series = []

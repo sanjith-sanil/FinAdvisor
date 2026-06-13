@@ -49,9 +49,10 @@ async def get_user_stats(user_id: uuid.UUID, db: AsyncSession = Depends(get_db))
         select(func.count(Card.id)).where(Card.user_id == user_id, Card.is_active.is_(True))
     )).scalar() or 0
     
-    txn_count = (await db.execute(
-        select(func.count(Transaction.id)).where(Transaction.user_id == user_id)
-    )).scalar() or 0
+    from app.models.transaction import scope_active_transactions
+    txn_stmt = select(func.count(Transaction.id)).where(Transaction.user_id == user_id)
+    txn_stmt = scope_active_transactions(txn_stmt)
+    txn_count = (await db.execute(txn_stmt)).scalar() or 0
     
     return {
         "cards_count": card_count,
@@ -150,7 +151,9 @@ async def export_data(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Fetch all user transactions
-    stmt = select(Transaction).where(Transaction.user_id == user_id).order_by(Transaction.transaction_date.desc())
+    from app.models.transaction import scope_active_transactions
+    stmt = select(Transaction).where(Transaction.user_id == user_id)
+    stmt = scope_active_transactions(stmt).order_by(Transaction.transaction_date.desc())
     txns = (await db.execute(stmt)).scalars().all()
 
     # Generate CSV in memory

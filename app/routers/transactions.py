@@ -75,10 +75,14 @@ async def list_transactions(
     if card_id:
         filters.append(Transaction.card_id == card_id)
 
+    from app.models.transaction import scope_active_transactions
     stmt = (
         select(Transaction)
         .where(and_(*filters))
-        .order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())
+    )
+    stmt = scope_active_transactions(stmt)
+    stmt = (
+        stmt.order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())
         .limit(limit)
         .offset(offset)
     )
@@ -187,11 +191,13 @@ async def delete_transaction(transaction_id: uuid.UUID, db: AsyncSession = Depen
 
 @router.get("/export/csv")
 async def export_transactions_csv(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> StreamingResponse:
+    from app.models.transaction import scope_active_transactions
     stmt = (
         select(Transaction)
         .where(Transaction.user_id == user_id)
-        .order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())
     )
+    stmt = scope_active_transactions(stmt)
+    stmt = stmt.order_by(Transaction.transaction_date.desc(), Transaction.created_at.desc())
     transactions = (await db.execute(stmt)).scalars().all()
 
     buffer = io.StringIO()

@@ -103,7 +103,7 @@ function buildCardHtml(card) {
   const pendingToLimit = Math.max(0, (Number(card.credit_limit) || 0) - ((Number(card.current_balance) || 0) + (Number(card.pending_emi_amount) || 0)));
 
   return `
-    <div class="card-item-wrapper" id="card-wrapper-${card.id}">
+    <div class="card-item-wrapper ${card.is_active === false ? 'deactivated-card' : ''}" id="card-wrapper-${card.id}">
       <div class="card-flip-container" id="card-${card.id}">
         <div class="card-flipper" id="flipper-${card.id}">
           <div class="card-face bank-card card-front ${getThemeClass(card)}">
@@ -155,9 +155,15 @@ function buildCardHtml(card) {
         <button class="btn-card-action edit" type="button" onclick="openEditCard('${card.id}')" title="Edit">
           <i data-lucide="edit-2"></i>
         </button>
-        <button class="btn-card-action deactivate" type="button" onclick="deactivateCard('${card.id}')" title="Deactivate">
-          <i data-lucide="pause-circle"></i>
-        </button>
+        ${card.is_active !== false ? `
+          <button class="btn-card-action deactivate" type="button" onclick="deactivateCard('${card.id}')" title="Deactivate">
+            <i data-lucide="pause-circle"></i>
+          </button>
+        ` : `
+          <button class="btn-card-action reactivate" type="button" onclick="reactivateCard('${card.id}')" title="Reactivate">
+            <i data-lucide="play-circle"></i>
+          </button>
+        `}
         <button class="btn-card-action delete" type="button" onclick="confirmDeleteCard('${card.id}')" title="Delete">
           <i data-lucide="trash-2"></i>
         </button>
@@ -1053,21 +1059,52 @@ async function deactivateCard(cardId) {
       throw new Error(err.detail || "Failed to deactivate card");
     }
 
-    const cardWrapper = document.getElementById("card-wrapper-" + cardId);
-    if (cardWrapper) {
-      cardWrapper.style.opacity = "0";
-      cardWrapper.style.transform = "scale(0.95)";
-      cardWrapper.style.transition = "all 0.3s ease";
-      setTimeout(() => {
-        cardWrapper.remove();
-        updateCardsEmptyState();
-      }, 300);
+    const idx = allCards.findIndex((c) => c.id === cardId);
+    if (idx !== -1) {
+      allCards[idx].is_active = false;
     }
+    renderCards();
 
     showToast("Card deactivated successfully", "success");
     if (openCardId === cardId) {
       closeCardDetails();
     }
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+
+async function reactivateCard(cardId) {
+  const confirmed = await showConfirmDialog(
+    "Reactivate Card",
+    "Do you want to reactivate this card?",
+    "Reactivate",
+    "success"
+  );
+
+  if (!confirmed) return;
+
+  const userId = localStorage.getItem("finadvisor_user_id") || "00000000-0000-0000-0000-000000000001";
+
+  try {
+    const res = await fetch(`/api/v1/cards/${cardId}?user_id=${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: true }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to reactivate card");
+    }
+
+    const idx = allCards.findIndex((c) => c.id === cardId);
+    if (idx !== -1) {
+      allCards[idx].is_active = true;
+    }
+    renderCards();
+
+    showToast("Card reactivated successfully", "success");
   } catch (err) {
     showToast(err.message, "error");
   }
@@ -1572,6 +1609,7 @@ window.viewCardDetails = viewCardDetails;
 window.closeCardDetails = closeCardDetails;
 window.openEditCard = openEditCard;
 window.deactivateCard = deactivateCard;
+window.reactivateCard = reactivateCard;
 window.confirmDeleteCard = confirmDeleteCard;
 window.openAddBenefit = openAddBenefit;
 window.handleRecAction = handleRecAction;

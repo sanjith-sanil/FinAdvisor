@@ -300,12 +300,12 @@ async def get_card_details(
     total_emi_remaining = round(emi_principal, 2)
     total_interest_payable = round(sum(row["interest"] for row in emi_schedule), 2)
 
+    from app.models.transaction import scope_active_transactions
     txn_stmt = (
         select(Transaction)
         .where(Transaction.user_id == user_id, Transaction.card_id == card_id)
-        .order_by(desc(Transaction.transaction_date))
-        .limit(5)
     )
+    txn_stmt = scope_active_transactions(txn_stmt).order_by(desc(Transaction.transaction_date)).limit(5)
     recent_transactions = (await db.execute(txn_stmt)).scalars().all()
 
     today = datetime.date.today()
@@ -326,6 +326,7 @@ async def get_card_details(
             Transaction.transaction_date < end_month,
         )
     )
+    spend_this_stmt = scope_active_transactions(spend_this_stmt)
     spend_last_stmt = select(Transaction).where(
         and_(
             Transaction.user_id == user_id,
@@ -335,6 +336,7 @@ async def get_card_details(
             Transaction.transaction_date < end_last_month,
         )
     )
+    spend_last_stmt = scope_active_transactions(spend_last_stmt)
 
     this_month_txns = (await db.execute(spend_this_stmt)).scalars().all()
     last_month_txns = (await db.execute(spend_last_stmt)).scalars().all()
@@ -364,7 +366,9 @@ async def card_transactions(
     db: AsyncSession = Depends(get_db),
 ) -> list[TransactionOut]:
     await _get_card_by_owner(db, card_id, user_id)
+    from app.models.transaction import scope_active_transactions
     stmt = select(Transaction).where(Transaction.card_id == card_id, Transaction.user_id == user_id)
+    stmt = scope_active_transactions(stmt)
     return (await db.execute(stmt)).scalars().all()
 
 

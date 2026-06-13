@@ -15,7 +15,7 @@ class Transaction(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    card_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("cards.id"))
+    card_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("cards.id", ondelete="CASCADE"))
     bank_account_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("bank_accounts.id"))
     transaction_type: Mapped[TransactionType] = mapped_column(SAEnum(TransactionType, name="transaction_type"), nullable=False)
     amount: Mapped[float] = mapped_column(DECIMAL(15, 2), nullable=False)
@@ -37,3 +37,12 @@ class Transaction(Base):
     card = relationship("Card", back_populates="transactions")
     bank_account = relationship("BankAccount", back_populates="transactions")
     sms_email_raw = relationship("SmsEmailRaw", back_populates="parsed_transaction", uselist=False)
+
+
+def scope_active_transactions(stmt):
+    from app.models.card import Card
+    from sqlalchemy import or_
+    return stmt.outerjoin(Card, Transaction.card_id == Card.id).where(
+        or_(Transaction.card_id.is_(None), Card.is_active == True)
+    )
+

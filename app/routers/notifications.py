@@ -74,12 +74,12 @@ async def get_notifications(user_id: uuid.UUID, db: AsyncSession = Depends(get_d
         })
 
     # 3. Dynamic Transactions
+    from app.models.transaction import scope_active_transactions
     txn_stmt = (
         select(Transaction)
         .where(Transaction.user_id == user_id)
-        .order_by(desc(Transaction.transaction_date), desc(Transaction.created_at))
-        .limit(10)
     )
+    txn_stmt = scope_active_transactions(txn_stmt).order_by(desc(Transaction.transaction_date), desc(Transaction.created_at)).limit(10)
     txns = (await db.execute(txn_stmt)).scalars().all()
     for txn in txns:
         ts = txn.transaction_date or txn.created_at

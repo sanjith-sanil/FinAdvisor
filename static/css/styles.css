@@ -7275,3 +7275,13 @@ body.theme-warmcharcoal .status-badge.failed {
   background: rgba(248, 113, 113, 0.15) !important;
   color: #f87171 !important;
 }
+
+/* Deactivated Card Styling */
+.card-item-wrapper.deactivated-card .card-flip-container {
+  filter: grayscale(100%) opacity(0.5);
+  cursor: not-allowed;
+}
+
+.card-item-wrapper.deactivated-card .card-controls {
+  filter: none;
+}

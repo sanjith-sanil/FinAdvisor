@@ -48,7 +48,7 @@ class Card(Base):
     updated_at: Mapped[datetime.datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     user = relationship("User", back_populates="cards")
-    transactions = relationship("Transaction", back_populates="card")
+    transactions = relationship("Transaction", back_populates="card", cascade="all, delete-orphan")
     benefits = relationship("CardBenefit", back_populates="card", cascade="all, delete-orphan")
     emis = relationship("CardEmi", back_populates="card", cascade="all, delete-orphan")
 

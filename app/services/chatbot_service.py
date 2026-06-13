@@ -19,7 +19,7 @@ from app.models.budget_goal import BudgetGoal
 from app.models.card import Card, CardBenefit
 from app.models.chatbot import ChatbotQuestionTemplate
 from app.models.enums import AccountType, CardType, TransactionType
-from app.models.transaction import Transaction
+from app.models.transaction import Transaction, scope_active_transactions
 from app.models.user import User
 from app.services.calculation_service import financial_health_score
 
@@ -159,18 +159,9 @@ class ChatbotService:
             (await db.execute(select(Card).where(Card.user_id == user_id, Card.is_active.is_(True)))).scalars().all()
         )
         accounts = (await db.execute(select(BankAccount).where(BankAccount.user_id == user_id))).scalars().all()
-        transactions = (
-            (
-                await db.execute(
-                    select(Transaction)
-                    .where(Transaction.user_id == user_id)
-                    .order_by(desc(Transaction.transaction_date))
-                    .limit(20)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        txn_stmt = select(Transaction).where(Transaction.user_id == user_id)
+        txn_stmt = scope_active_transactions(txn_stmt).order_by(desc(Transaction.transaction_date)).limit(20)
+        transactions = (await db.execute(txn_stmt)).scalars().all()
 
         credit_cards = [card for card in cards if card.card_type == CardType.credit]
         total_outstanding = sum(_to_float(card.current_balance) for card in credit_cards)
@@ -321,20 +312,14 @@ class ChatbotService:
             func.lower(func.coalesce(Transaction.description, "")).like("%stipend%"),
         )
 
-        salary_txns = (
-            (
-                await db.execute(
-                    select(Transaction).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_type == TransactionType.credit,
-                        Transaction.transaction_date >= start,
-                        salary_filter,
-                    )
-                )
-            )
-            .scalars()
-            .all()
+        salary_stmt = select(Transaction).where(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == TransactionType.credit,
+            Transaction.transaction_date >= start,
+            salary_filter,
         )
+        salary_stmt = scope_active_transactions(salary_stmt)
+        salary_txns = (await db.execute(salary_stmt)).scalars().all()
 
         if not salary_txns:
             salary_accounts = (
@@ -349,20 +334,14 @@ class ChatbotService:
                 .all()
             )
             if salary_accounts:
-                salary_txns = (
-                    (
-                        await db.execute(
-                            select(Transaction).where(
-                                Transaction.user_id == user_id,
-                                Transaction.transaction_type == TransactionType.credit,
-                                Transaction.transaction_date >= start,
-                                Transaction.bank_account_id.in_(salary_accounts),
-                            )
-                        )
-                    )
-                    .scalars()
-                    .all()
+                salary_stmt2 = select(Transaction).where(
+                    Transaction.user_id == user_id,
+                    Transaction.transaction_type == TransactionType.credit,
+                    Transaction.transaction_date >= start,
+                    Transaction.bank_account_id.in_(salary_accounts),
                 )
+                salary_stmt2 = scope_active_transactions(salary_stmt2)
+                salary_txns = (await db.execute(salary_stmt2)).scalars().all()
 
         if not salary_txns:
             return None
@@ -1118,14 +1097,14 @@ class ChatbotService:
         return matched
 
     async def _sum_spending(self, user_id: uuid.UUID, start: datetime.datetime, end: datetime.datetime, db: AsyncSession) -> float:
-        total = await db.execute(
-            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                Transaction.user_id == user_id,
-                Transaction.transaction_type == TransactionType.debit,
-                Transaction.transaction_date >= start,
-                Transaction.transaction_date < end,
-            )
+        spending_stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == TransactionType.debit,
+            Transaction.transaction_date >= start,
+            Transaction.transaction_date < end,
         )
+        spending_stmt = scope_active_transactions(spending_stmt)
+        total = await db.execute(spending_stmt)
         return _to_float(total.scalar_one())
 
     async def _spending_breakdown_source(
@@ -1144,6 +1123,7 @@ class ChatbotService:
                 Transaction.transaction_type == TransactionType.debit,
                 Transaction.transaction_date >= start,
                 Transaction.transaction_date < end,
+                or_(Transaction.card_id.is_(None), Card.is_active == True),
             )
             .group_by("source_name")
             .order_by(desc("total"))
@@ -1303,33 +1283,27 @@ class ChatbotService:
 
         if data_query_type == "today_spending":
             total = await self._sum_spending(user_id, today_start, tomorrow_start, db)
-            count = (
-                await db.execute(
-                    select(func.count(Transaction.id)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_type == TransactionType.debit,
-                        Transaction.transaction_date >= today_start,
-                        Transaction.transaction_date < tomorrow_start,
-                    )
-                )
-            ).scalar_one()
+            count_stmt = select(func.count(Transaction.id)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.transaction_date >= today_start,
+                Transaction.transaction_date < tomorrow_start,
+            )
+            count_stmt = scope_active_transactions(count_stmt)
+            count = (await db.execute(count_stmt)).scalar_one()
             return {
                 "answer_text": f"You have spent {_inr(total)} today so far. ({int(count)} transactions)",
                 "data": {"total": total, "count": int(count)},
             }
 
         if data_query_type == "top_spending_category":
-            stmt = (
-                select(Transaction.merchant_category, func.coalesce(func.sum(Transaction.amount), 0).label("amount"))
-                .where(
-                    Transaction.user_id == user_id,
-                    Transaction.transaction_type == TransactionType.debit,
-                    Transaction.transaction_date >= month_start,
-                    Transaction.transaction_date < month_end,
-                )
-                .group_by(Transaction.merchant_category)
-                .order_by(desc("amount"))
+            stmt = select(Transaction.merchant_category, func.coalesce(func.sum(Transaction.amount), 0).label("amount")).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
             )
+            stmt = scope_active_transactions(stmt).group_by(Transaction.merchant_category).order_by(desc("amount"))
             rows = (await db.execute(stmt)).all()
             if not rows:
                 return {"answer_text": "No transactions found yet.", "data": {"all_categories": []}}
@@ -1351,17 +1325,15 @@ class ChatbotService:
 
         if data_query_type == "category_spending_month":
             category = entity_value or "Others"
-            amount = (
-                await db.execute(
-                    select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_type == TransactionType.debit,
-                        Transaction.transaction_date >= month_start,
-                        Transaction.transaction_date < month_end,
-                        func.lower(func.coalesce(Transaction.merchant_category, "Others")) == category.lower(),
-                    )
-                )
-            ).scalar_one()
+            amount_stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
+                func.lower(func.coalesce(Transaction.merchant_category, "Others")) == category.lower(),
+            )
+            amount_stmt = scope_active_transactions(amount_stmt)
+            amount = (await db.execute(amount_stmt)).scalar_one()
             total = await self._sum_spending(user_id, month_start, month_end, db)
             pct = (_to_float(amount) / total * 100) if total > 0 else 0
             return {
@@ -1417,28 +1389,24 @@ class ChatbotService:
             card = await self._find_card_by_label(user_id, entity_value, db)
             if not card:
                 return {"answer_text": "You haven't added any cards yet. Go to My Cards to add one.", "data": {}}
-            amount = (
-                await db.execute(
-                    select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_type == TransactionType.debit,
-                        Transaction.card_id == card.id,
-                        Transaction.transaction_date >= month_start,
-                        Transaction.transaction_date < month_end,
-                    )
-                )
-            ).scalar_one()
-            count = (
-                await db.execute(
-                    select(func.count(Transaction.id)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_type == TransactionType.debit,
-                        Transaction.card_id == card.id,
-                        Transaction.transaction_date >= month_start,
-                        Transaction.transaction_date < month_end,
-                    )
-                )
-            ).scalar_one()
+            amount_stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.card_id == card.id,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
+            )
+            amount_stmt = scope_active_transactions(amount_stmt)
+            amount = (await db.execute(amount_stmt)).scalar_one()
+            count_stmt = select(func.count(Transaction.id)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.card_id == card.id,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
+            )
+            count_stmt = scope_active_transactions(count_stmt)
+            count = (await db.execute(count_stmt)).scalar_one()
             label = _card_label(card)
             return {
                 "answer_text": (
@@ -1687,18 +1655,9 @@ class ChatbotService:
             }
 
         if data_query_type == "recent_transactions":
-            txns = (
-                (
-                    await db.execute(
-                        select(Transaction)
-                        .where(Transaction.user_id == user_id)
-                        .order_by(desc(Transaction.transaction_date))
-                        .limit(5)
-                    )
-                )
-                .scalars()
-                .all()
-            )
+            stmt = select(Transaction).where(Transaction.user_id == user_id)
+            stmt = scope_active_transactions(stmt).order_by(desc(Transaction.transaction_date)).limit(5)
+            txns = (await db.execute(stmt)).scalars().all()
             if not txns:
                 return {"answer_text": "No transactions found yet.", "data": {"transactions": []}}
             lines = []
@@ -1723,23 +1682,14 @@ class ChatbotService:
             return {"answer_text": "Here are your last 5 transactions:\n" + "\n".join(lines), "data": {"transactions": payload}}
 
         if data_query_type == "largest_transaction_month":
-            txn = (
-                (
-                    await db.execute(
-                        select(Transaction)
-                        .where(
-                            Transaction.user_id == user_id,
-                            Transaction.transaction_type == TransactionType.debit,
-                            Transaction.transaction_date >= month_start,
-                            Transaction.transaction_date < month_end,
-                        )
-                        .order_by(desc(Transaction.amount))
-                        .limit(1)
-                    )
-                )
-                .scalars()
-                .first()
+            stmt = select(Transaction).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_type == TransactionType.debit,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
             )
+            stmt = scope_active_transactions(stmt).order_by(desc(Transaction.amount)).limit(1)
+            txn = (await db.execute(stmt)).scalars().first()
             if not txn:
                 return {"answer_text": "No transactions found yet.", "data": {}}
             card_label = "-"
@@ -1757,35 +1707,29 @@ class ChatbotService:
             }
 
         if data_query_type == "transaction_count_today":
-            count = (
-                await db.execute(
-                    select(func.count(Transaction.id)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_date >= today_start,
-                        Transaction.transaction_date < tomorrow_start,
-                    )
-                )
-            ).scalar_one()
-            total = (
-                await db.execute(
-                    select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_date >= today_start,
-                        Transaction.transaction_date < tomorrow_start,
-                    )
-                )
-            ).scalar_one()
+            count_stmt = select(func.count(Transaction.id)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_date >= today_start,
+                Transaction.transaction_date < tomorrow_start,
+            )
+            count_stmt = scope_active_transactions(count_stmt)
+            count = (await db.execute(count_stmt)).scalar_one()
+            total_stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_date >= today_start,
+                Transaction.transaction_date < tomorrow_start,
+            )
+            total_stmt = scope_active_transactions(total_stmt)
+            total = (await db.execute(total_stmt)).scalar_one()
             return {
                 "answer_text": f"You have made {int(count)} transactions today totalling {_inr(_to_float(total))}.",
                 "data": {"count": int(count), "total": _to_float(total)},
             }
 
         if data_query_type == "transaction_count_all":
-            count = (
-                await db.execute(
-                    select(func.count(Transaction.id)).where(Transaction.user_id == user_id)
-                )
-            ).scalar_one()
+            count_stmt = select(func.count(Transaction.id)).where(Transaction.user_id == user_id)
+            count_stmt = scope_active_transactions(count_stmt)
+            count = (await db.execute(count_stmt)).scalar_one()
             return {
                 "answer_text": (
                     f"You currently have {int(count)} transactions in your history, including card payments, EMI deductions, and bank transfers."
@@ -1794,15 +1738,13 @@ class ChatbotService:
             }
 
         if data_query_type == "transaction_count_month":
-            count = (
-                await db.execute(
-                    select(func.count(Transaction.id)).where(
-                        Transaction.user_id == user_id,
-                        Transaction.transaction_date >= month_start,
-                        Transaction.transaction_date < month_end,
-                    )
-                )
-            ).scalar_one()
+            count_stmt = select(func.count(Transaction.id)).where(
+                Transaction.user_id == user_id,
+                Transaction.transaction_date >= month_start,
+                Transaction.transaction_date < month_end,
+            )
+            count_stmt = scope_active_transactions(count_stmt)
+            count = (await db.execute(count_stmt)).scalar_one()
             return {
                 "answer_text": (
                     f"You have {int(count)} transactions recorded so far this month."
