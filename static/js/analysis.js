@@ -143,7 +143,14 @@ function renderSpendingBreakdown(transactions, period) {
   const topCategory = document.getElementById("spend-top-category");
   if (topCategory) topCategory.textContent = categories.length > 0 ? categories[0][0] : "-";
 
-  const colors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#7C3AED", "#3B82F6", "#EC4899", "#14B8A6", "#F97316", "#64748B"];
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  let colors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#7C3AED", "#3B82F6", "#EC4899", "#14B8A6", "#F97316", "#64748B"];
+  if (theme === "graphite") {
+    colors = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b", "#3f3f46", "#18181b"];
+  }
+  const isDark = theme === "dark";
+  const isGraphite = theme === "graphite";
+  const chartBorderColor = isGraphite ? "#27272a" : (isDark ? "#1e293b" : "#fff");
 
   const legend = document.getElementById("analysisDonutLegend");
   if (legend) {
@@ -174,7 +181,7 @@ function renderSpendingBreakdown(transactions, period) {
             data: categories.map((c) => c[1]),
             backgroundColor: categories.map((_, i) => colors[i % colors.length]),
             borderWidth: 2,
-            borderColor: "#fff",
+            borderColor: chartBorderColor,
             hoverOffset: 6,
           },
         ],
@@ -240,6 +247,19 @@ function renderDayOfWeekChart(debits) {
   if (dayChartInstance) dayChartInstance.destroy();
   if (!window.Chart || !ctx) return;
 
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+
+  let barColor = "rgba(79, 70, 229, 0.8)";
+  if (theme === "graphite") {
+    barColor = "#3b82f6";
+  } else if (theme === "dark") {
+    barColor = "#818cf8";
+  }
+
+  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
+  const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+
   dayChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
@@ -247,7 +267,7 @@ function renderDayOfWeekChart(debits) {
       datasets: [
         {
           data: dayTotals,
-          backgroundColor: "rgba(79, 70, 229, 0.8)",
+          backgroundColor: barColor,
           borderRadius: 8,
         },
       ],
@@ -257,10 +277,14 @@ function renderDayOfWeekChart(debits) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false } },
+        x: {
+          grid: { display: false },
+          ticks: { color: tickColor },
+        },
         y: {
-          grid: { color: "rgba(0,0,0,0.04)" },
+          grid: { color: gridColor },
           ticks: {
+            color: tickColor,
             callback: (v) => `Rs${Number(v).toLocaleString("en-IN")}`,
           },
         },
@@ -285,6 +309,22 @@ function renderTrends(transactions) {
   const trendCtx = document.getElementById("monthlyTrendChart")?.getContext("2d");
   if (monthlyTrendChartInstance) monthlyTrendChartInstance.destroy();
   if (window.Chart && trendCtx && months.length) {
+    const theme = localStorage.getItem("finadvisor_theme") || "default";
+    const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+
+    let lineColor = "#4F46E5";
+    let lineBg = "rgba(79,70,229,0.08)";
+    if (theme === "graphite") {
+      lineColor = "#3b82f6";
+      lineBg = "rgba(59, 130, 246, 0.08)";
+    } else if (theme === "dark") {
+      lineColor = "#818cf8";
+      lineBg = "rgba(129, 140, 248, 0.08)";
+    }
+
+    const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
+    const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+
     monthlyTrendChartInstance = new Chart(trendCtx, {
       type: "line",
       data: {
@@ -296,11 +336,11 @@ function renderTrends(transactions) {
           {
             label: "Spending",
             data: months.map((m) => m[1]),
-            borderColor: "#4F46E5",
-            backgroundColor: "rgba(79,70,229,0.08)",
+            borderColor: lineColor,
+            backgroundColor: lineBg,
             tension: 0.4,
             fill: true,
-            pointBackgroundColor: "#4F46E5",
+            pointBackgroundColor: lineColor,
             pointRadius: 4,
             pointHoverRadius: 6,
           },
@@ -310,6 +350,16 @@ function renderTrends(transactions) {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: tickColor },
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: tickColor },
+          },
+        },
       },
     });
   }
@@ -331,6 +381,22 @@ function renderDailyTrendChart(debitTxns) {
   if (dailyTrendChartInstance) dailyTrendChartInstance.destroy();
   if (!window.Chart || !ctx || !entries.length) return;
 
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+
+  let lineColor = "#10B981";
+  let lineBg = "rgba(16,185,129,0.08)";
+  if (theme === "graphite") {
+    lineColor = "#4ade80";
+    lineBg = "rgba(74, 222, 128, 0.08)";
+  } else if (theme === "dark") {
+    lineColor = "#60a5fa";
+    lineBg = "rgba(96, 165, 250, 0.08)";
+  }
+
+  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
+  const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+
   dailyTrendChartInstance = new Chart(ctx, {
     type: "line",
     data: {
@@ -341,8 +407,8 @@ function renderDailyTrendChart(debitTxns) {
       datasets: [
         {
           data: entries.map((e) => e[1]),
-          borderColor: "#10B981",
-          backgroundColor: "rgba(16,185,129,0.08)",
+          borderColor: lineColor,
+          backgroundColor: lineBg,
           tension: 0.35,
           fill: true,
           pointRadius: 2,
@@ -353,6 +419,16 @@ function renderDailyTrendChart(debitTxns) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: tickColor },
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: { color: tickColor },
+        },
+      },
     },
   });
 }

@@ -7,7 +7,7 @@ function applySavedTheme() {
 }
 
 function cycleTheme() {
-  const themes = ["default", "emerald", "rose", "dark"];
+  const themes = ["default", "emerald", "rose", "dark", "graphite"];
   const currentTheme = localStorage.getItem("finadvisor_theme") || "default";
   const nextIndex = (themes.indexOf(currentTheme) + 1) % themes.length;
   const nextTheme = themes[nextIndex];

@@ -86,13 +86,27 @@ async function monitorDashboardEmailSync() {
 }
 
 function renderHealthScore(score, label, color) {
-  const radius = 40;
+  const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const rawScore = Number(score || 0);
   const has900Scale = rawScore > 100;
   const normalizedPercent = Math.max(0, Math.min(100, has900Scale ? rawScore / 9 : rawScore));
   const displayScore = Math.round(Math.max(0, Math.min(900, has900Scale ? rawScore : rawScore * 9)));
   const offset = circumference - (normalizedPercent / 100) * circumference;
+
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  let displayColor = color;
+  if (theme === "graphite") {
+    if (color === "#10B981" || color === "#3B82F6") {
+      displayColor = "#4ade80";
+    } else if (color === "#EF4444" || color === "#DC2626") {
+      displayColor = "#f87171";
+    } else if (color === "#64748b" || color === "#64748B") {
+      displayColor = "#a1a1aa";
+    } else {
+      displayColor = "#f59e0b";
+    }
+  }
 
   const container = document.getElementById("healthScoreWidget");
   if (!container) return;
@@ -101,13 +115,13 @@ function renderHealthScore(score, label, color) {
     <div class="health-score-wrap">
       <div class="health-score-svg-wrap">
         <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="${radius}" fill="none" stroke="#E2E8F0" stroke-width="8" />
+          <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${theme === 'graphite' ? '#3f3f46' : '#E2E8F0'}" stroke-width="8" />
           <circle
             cx="50"
             cy="50"
             r="${radius}"
             fill="none"
-            stroke="${color}"
+            stroke="${displayColor}"
             stroke-width="8"
             stroke-linecap="round"
             stroke-dasharray="${circumference}"
@@ -117,11 +131,11 @@ function renderHealthScore(score, label, color) {
           />
         </svg>
         <div class="health-score-center">
-          <span class="health-score-num" style="color:${color};">${displayScore}</span>
+          <span class="health-score-num" style="color:${displayColor};">${displayScore}</span>
           <span class="health-score-den">/900</span>
         </div>
       </div>
-      <div class="health-score-pill" style="background:${color}18;color:${color};">${label}</div>
+      <div class="health-score-pill" style="background:${theme === 'graphite' ? '#3f3f46' : displayColor + '18'};color:${displayColor};">${label}</div>
     </div>
   `;
 }
@@ -174,7 +188,15 @@ function renderCategoryChart(categoryData) {
 
   if (categoryChart) categoryChart.destroy();
 
-  const palette = ["#2563eb", "#7c3aed", "#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#14b8a6", "#64748b"];
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  let palette = ["#2563eb", "#7c3aed", "#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#14b8a6", "#64748b"];
+  if (theme === "graphite") {
+    palette = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b"];
+  }
+  const isDark = theme === "dark";
+  const isGraphite = theme === "graphite";
+  const chartBorderColor = isGraphite ? "#27272a" : (isDark ? "#1e293b" : "#fff");
+
   categoryChart = new Chart(chartCanvas, {
     type: "doughnut",
     data: {
@@ -184,7 +206,7 @@ function renderCategoryChart(categoryData) {
           data: values,
           backgroundColor: labels.map((_, idx) => palette[idx % palette.length]),
           borderWidth: 2,
-          borderColor: "#fff",
+          borderColor: chartBorderColor,
         },
       ],
     },
@@ -237,9 +259,23 @@ function loadMonthlyTrendChart(summary) {
   const avg = (thisMonth + lastMonth) / 2;
 
   const ctx = canvas.getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-  gradient.addColorStop(0, "#4F46E5");
-  gradient.addColorStop(1, "#7C3AED");
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+
+  let barColors;
+  if (theme === "graphite") {
+    const chartPrimary = getComputedStyle(document.body).getPropertyValue("--chart-primary").trim() || "#3b82f6";
+    const chartSecondary = getComputedStyle(document.body).getPropertyValue("--chart-secondary").trim() || "#6366f1";
+    barColors = [chartSecondary, chartPrimary, chartPrimary];
+  } else {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, "#4F46E5");
+    gradient.addColorStop(1, "#7C3AED");
+    barColors = gradient;
+  }
+
+  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#94A3B8";
+  const gridColor = isDarkOrGraphite ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   trendChart = new Chart(canvas, {
     type: "bar",
@@ -249,7 +285,7 @@ function loadMonthlyTrendChart(summary) {
         {
           label: "Spending",
           data: [lastMonth, thisMonth, avg],
-          backgroundColor: gradient,
+          backgroundColor: barColors,
           borderRadius: 8,
           borderSkipped: "bottom",
         },
@@ -272,14 +308,14 @@ function loadMonthlyTrendChart(summary) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { size: 10 }, color: "#94A3B8" },
+          ticks: { font: { size: 10 }, color: tickColor },
           border: { display: false },
         },
         y: {
-          grid: { color: "rgba(0,0,0,0.04)", drawBorder: false },
+          grid: { color: gridColor, drawBorder: false },
           ticks: {
             font: { size: 10 },
-            color: "#94A3B8",
+            color: tickColor,
             callback: (v) => `Rs${(v / 1000).toFixed(0)}k`,
           },
           border: { display: false },
@@ -306,16 +342,24 @@ function loadCardUtilization(summary) {
     return;
   }
 
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+
   utilizationList.innerHTML = cards
     .map((card) => {
       const ratio = Number(card.credit_utilization_ratio || 0);
-      const color = ratio < 30 ? "#10b981" : ratio < 60 ? "#f59e0b" : "#ef4444";
+      const color = ratio < 30 
+        ? (getComputedStyle(document.body).getPropertyValue("--success").trim() || "#10b981") 
+        : ratio < 60 
+        ? (getComputedStyle(document.body).getPropertyValue("--warning").trim() || "#f59e0b") 
+        : (getComputedStyle(document.body).getPropertyValue("--danger").trim() || "#ef4444");
+      
+      const badgeBg = theme === "graphite" ? "var(--badge-bg)" : `${color}22`;
       return `
         <div class="util-row">
           <div>${card.bank_name}</div>
           <div class="util-bar"><span style="width:${Math.min(100, ratio)}%;background:${color};"></span></div>
           <div>Rs${formatMoney(card.current_balance)} / Rs${formatMoney(card.credit_limit)}</div>
-          <div class="badge" style="background:${color}22;color:${color};">${ratio.toFixed(1)}%</div>
+          <div class="badge" style="background:${badgeBg};color:${color};">${ratio.toFixed(1)}%</div>
         </div>
       `;
     })
