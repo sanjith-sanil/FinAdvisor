@@ -5,6 +5,8 @@ import uuid
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from app.models.user import User
+from app.core.security import get_current_user
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,14 +31,8 @@ router = APIRouter(prefix="/api/v1/chatbot", tags=["chatbot"])
 service = ChatbotService()
 
 
-def _validate_user_context(x_user_id: str | None, expected_user_id: uuid.UUID) -> None:
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Missing user context")
-    try:
-        request_user_id = uuid.UUID(x_user_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=401, detail="Invalid user context") from exc
-    if request_user_id != expected_user_id:
+def _validate_user_context(current_user: User, expected_user_id: uuid.UUID) -> None:
+    if current_user.id != expected_user_id:
         raise HTTPException(status_code=403, detail="User context mismatch")
 
 
@@ -142,9 +138,9 @@ def _variety_questions(questions: list[dict], limit: int = 6) -> list[dict]:
 async def chatbot_welcome(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> ChatWelcomeResponse:
-    _validate_user_context(x_user_id, user_id)
+    _validate_user_context(current_user, user_id)
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -170,9 +166,9 @@ async def chatbot_welcome(
 async def chatbot_ask(
     payload: ChatAskRequest,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> ChatAskResponse:
-    _validate_user_context(x_user_id, payload.user_id)
+    _validate_user_context(current_user, payload.user_id)
     session = await db.get(ChatbotSession, payload.session_id)
     if not session or session.user_id != payload.user_id:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -299,9 +295,9 @@ async def chatbot_ask(
 async def chatbot_ask_card(
     payload: ChatAskCardRequest,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> ChatAskResponse:
-    _validate_user_context(x_user_id, payload.user_id)
+    _validate_user_context(current_user, payload.user_id)
     session = await db.get(ChatbotSession, payload.session_id)
     if not session or session.user_id != payload.user_id:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -461,9 +457,9 @@ async def chatbot_ask_card(
 async def chatbot_clarify(
     payload: ChatClarifyRequest,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> ChatAskResponse:
-    _validate_user_context(x_user_id, payload.user_id)
+    _validate_user_context(current_user, payload.user_id)
     session = await db.get(ChatbotSession, payload.session_id)
     if not session or session.user_id != payload.user_id:
         raise HTTPException(status_code=404, detail="Chat session not found")
@@ -518,9 +514,9 @@ async def chatbot_clarify(
 async def chatbot_questions(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
-    _validate_user_context(x_user_id, user_id)
+    _validate_user_context(current_user, user_id)
     questions = await service.get_dynamic_questions(user_id, db)
     grouped: dict[str, list[dict]] = defaultdict(list)
     for question in questions:
@@ -544,9 +540,9 @@ async def chatbot_questions(
 async def chatbot_history(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+    current_user: User = Depends(get_current_user),
 ) -> ChatHistoryResponse:
-    _validate_user_context(x_user_id, user_id)
+    _validate_user_context(current_user, user_id)
     session = (
         (await db.execute(select(ChatbotSession).where(ChatbotSession.user_id == user_id).order_by(desc(ChatbotSession.last_active))))
         .scalars()

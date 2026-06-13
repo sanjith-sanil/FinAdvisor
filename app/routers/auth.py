@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.auth import AuthLogin, AuthRegister, AuthResponse
+from app.core.security import create_access_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -57,11 +58,13 @@ async def register(payload: AuthRegister, db: AsyncSession = Depends(get_db)) ->
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    token = create_access_token(user.id)
     return AuthResponse(
         user_id=user.id,
         customer_id=user.customer_id,
         full_name=user.full_name,
         email=user.email,
+        access_token=token,
     )
 
 
@@ -80,9 +83,11 @@ async def login(payload: AuthLogin, db: AsyncSession = Depends(get_db)) -> AuthR
         user.password_hash = replacement_hash
         await db.commit()
 
+    token = create_access_token(user.id)
     return AuthResponse(
         user_id=user.id,
         customer_id=user.customer_id,
         full_name=user.full_name,
         email=user.email,
+        access_token=token,
     )

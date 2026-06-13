@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.user import User
+from app.core.security import get_current_user
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.utils.files import save_upload_file
 
@@ -32,7 +33,13 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db)) -
 
 
 @router.get("/{user_id}", response_model=UserOut)
-async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> UserOut:
+async def get_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -40,7 +47,13 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Us
 
 
 @router.get("/{user_id}/stats")
-async def get_user_stats(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def get_user_stats(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     from sqlalchemy import func
     from app.models.card import Card
     from app.models.transaction import Transaction
@@ -61,7 +74,14 @@ async def get_user_stats(user_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 
 
 @router.put("/{user_id}", response_model=UserOut)
-async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession = Depends(get_db)) -> UserOut:
+async def update_user(
+    user_id: uuid.UUID,
+    payload: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -74,7 +94,13 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession 
 
 
 @router.delete("/{user_id}")
-async def permanent_delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def permanent_delete_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -88,7 +114,10 @@ async def upload_avatar(
     user_id: uuid.UUID,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> UserOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -111,8 +140,11 @@ class ChangePasswordPayload(BaseModel):
 async def change_password(
     user_id: uuid.UUID,
     payload: ChangePasswordPayload,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -144,8 +176,11 @@ from app.models.transaction import Transaction
 @router.get("/{user_id}/export-data")
 async def export_data(
     user_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -185,4 +220,3 @@ async def export_data(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
-

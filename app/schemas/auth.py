@@ -21,3 +21,5 @@ class AuthResponse(BaseModel):
     customer_id: str
     full_name: str
     email: EmailStr
+    access_token: str | None = None
+

@@ -1,13 +1,15 @@
 import datetime
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.sms_email_raw import SmsEmailRaw
 from app.models.transaction import Transaction
+from app.models.user import User
+from app.core.security import get_current_user
 from app.models.enums import SmsSourceType, TransactionSource, TransactionType
 from app.schemas.sms_email_raw import SmsEmailRawOut, SmsIngestRequest
 from app.services.sms_parser_service import parse_sms
@@ -20,7 +22,15 @@ router = APIRouter(prefix="/api/v1/sms", tags=["sms"])
 
 
 @router.post("/ingest")
-async def ingest_sms(user_id: uuid.UUID, payload: SmsIngestRequest, db: AsyncSession = Depends(get_db)) -> dict:
+async def ingest_sms(
+    user_id: uuid.UUID,
+    payload: SmsIngestRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     parsed = parse_sms(payload.raw_sms, sender=payload.sender)
     parsed_ok = parsed is not None
     bank_name = parsed.get("bank_name") if parsed else "Unknown Bank"
@@ -97,7 +107,15 @@ async def ingest_sms(user_id: uuid.UUID, payload: SmsIngestRequest, db: AsyncSes
 
 
 @router.post("/ingest-bulk")
-async def ingest_bulk(user_id: uuid.UUID, payload: list[SmsIngestRequest], db: AsyncSession = Depends(get_db)) -> dict:
+async def ingest_bulk(
+    user_id: uuid.UUID,
+    payload: list[SmsIngestRequest],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     results = []
     for item in payload:
         parsed = parse_sms(item.raw_sms, sender=item.sender)
@@ -147,19 +165,31 @@ async def ingest_bulk(user_id: uuid.UUID, payload: list[SmsIngestRequest], db: A
                 )
             raw.parsed_transaction_id = txn.id
 
-    results.append({"raw": item.raw_sms, "parsed": parsed_ok})
+        results.append({"raw": item.raw_sms, "parsed": parsed_ok})
 
     await db.commit()
     return {"results": results}
 
 
 @router.get("/raw", response_model=list[SmsEmailRawOut])
-async def list_raw(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[SmsEmailRawOut]:
+async def list_raw(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SmsEmailRawOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(SmsEmailRaw).where(SmsEmailRaw.user_id == user_id)
     return (await db.execute(stmt)).scalars().all()
 
 
 @router.get("/unparsed", response_model=list[SmsEmailRawOut])
-async def list_unparsed(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[SmsEmailRawOut]:
+async def list_unparsed(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SmsEmailRawOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(SmsEmailRaw).where(SmsEmailRaw.user_id == user_id, SmsEmailRaw.is_processed.is_(False))
     return (await db.execute(stmt)).scalars().all()

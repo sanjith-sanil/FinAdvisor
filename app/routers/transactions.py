@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.transaction import Transaction
+from app.models.user import User
+from app.core.security import get_current_user
 from app.schemas.transaction import TransactionCreate, TransactionOut, TransactionUpdate
 from app.services.balance_sync_service import (
     resolve_transaction_accounts,
@@ -34,7 +36,11 @@ async def list_transactions(
     limit: int = 50,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[TransactionOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     filters = [Transaction.user_id == user_id]
     if date_from:
         filters.append(Transaction.transaction_date >= datetime.datetime.fromisoformat(date_from))
@@ -73,6 +79,11 @@ async def list_transactions(
             )
         )
     if card_id:
+        # Prevent accessing another user's card transactions
+        from app.models.card import Card
+        card = await db.get(Card, card_id)
+        if card and card.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Forbidden: You do not own this card")
         filters.append(Transaction.card_id == card_id)
 
     from app.models.transaction import scope_active_transactions
@@ -90,7 +101,14 @@ async def list_transactions(
 
 
 @router.post("/", response_model=TransactionOut)
-async def create_transaction(payload: TransactionCreate, db: AsyncSession = Depends(get_db)) -> TransactionOut:
+async def create_transaction(
+    payload: TransactionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransactionOut:
+    if payload.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     txn = Transaction(**payload.model_dump())
     db.add(txn)
     await resolve_transaction_accounts(db, txn)
@@ -111,19 +129,26 @@ async def create_transaction(payload: TransactionCreate, db: AsyncSession = Depe
 
 
 @router.get("/{transaction_id}", response_model=TransactionOut)
-async def get_transaction(transaction_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> TransactionOut:
+async def get_transaction(
+    transaction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransactionOut:
     txn = await db.get(Transaction, transaction_id)
-    if not txn:
+    if not txn or txn.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return txn
 
 
 @router.put("/{transaction_id}", response_model=TransactionOut)
 async def update_transaction(
-    transaction_id: uuid.UUID, payload: TransactionUpdate, db: AsyncSession = Depends(get_db)
+    transaction_id: uuid.UUID,
+    payload: TransactionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> TransactionOut:
     txn = await db.get(Transaction, transaction_id)
-    if not txn:
+    if not txn or txn.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Transaction not found")
         
     old_amount = float(txn.amount)
@@ -166,9 +191,13 @@ async def update_transaction(
 
 
 @router.delete("/{transaction_id}")
-async def delete_transaction(transaction_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def delete_transaction(
+    transaction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     txn = await db.get(Transaction, transaction_id)
-    if not txn:
+    if not txn or txn.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Transaction not found")
         
     if txn.card_id or txn.bank_account_id:
@@ -190,7 +219,14 @@ async def delete_transaction(transaction_id: uuid.UUID, db: AsyncSession = Depen
 
 
 @router.get("/export/csv")
-async def export_transactions_csv(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> StreamingResponse:
+async def export_transactions_csv(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     from app.models.transaction import scope_active_transactions
     stmt = (
         select(Transaction)

@@ -12,13 +12,22 @@ from app.db.database import get_db
 from app.models.card import Card
 from app.models.sms_email_raw import SmsEmailRaw
 from app.models.transaction import Transaction
+from app.models.user import User
+from app.core.security import get_current_user
 from app.services.notification_service import notification_hub
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
 
 
 @router.get("/{user_id}")
-async def get_notifications(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[dict]:
+async def get_notifications(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     notifications = []
 
     # 1. Card Payment Reminders (due in next 7 days)
@@ -31,11 +40,9 @@ async def get_notifications(user_id: uuid.UUID, db: AsyncSession = Depends(get_d
             try:
                 due_date = datetime.date(today.year, today.month, due_day)
             except ValueError:
-                # Handle edge cases (e.g. 31st of month in Feb)
                 due_date = datetime.date(today.year, today.month, 28)
 
             if due_date < today:
-                # Next month
                 if today.month == 12:
                     due_date = datetime.date(today.year + 1, 1, due_day)
                 else:
@@ -92,13 +99,22 @@ async def get_notifications(user_id: uuid.UUID, db: AsyncSession = Depends(get_d
             "unread": True
         })
 
-    # Sort notifications by timestamp desc
     notifications.sort(key=lambda x: x["timestamp"] or "", reverse=True)
     return notifications[:15]
 
 
 @router.get("/stream/{user_id}")
-async def stream_notifications(user_id: str) -> StreamingResponse:
+async def stream_notifications(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    try:
+        req_user_id = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user_id")
+    if req_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     async def event_stream():
         while True:
             try:
@@ -114,4 +130,3 @@ async def stream_notifications(user_id: str) -> StreamingResponse:
 
     headers = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
     return StreamingResponse(event_stream(), media_type="text/event-stream", headers=headers)
-

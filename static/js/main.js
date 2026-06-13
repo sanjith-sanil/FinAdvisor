@@ -1,3 +1,32 @@
+(function() {
+  const publicPages = ["/", "/login", "/register", "/signin", "/signup"];
+  const currentPath = window.location.pathname;
+  const token = localStorage.getItem("finadvisor_token");
+  
+  if (!publicPages.includes(currentPath) && !token) {
+    window.location.href = "/login";
+    return;
+  }
+
+  const originalFetch = window.fetch;
+  window.fetch = async function (url, options = {}) {
+    const activeToken = localStorage.getItem("finadvisor_token");
+    if (activeToken) {
+      options.headers = options.headers || {};
+      if (!options.headers["Authorization"]) {
+        options.headers["Authorization"] = `Bearer ${activeToken}`;
+      }
+    }
+    const response = await originalFetch(url, options);
+    if (response.status === 401 && url.includes("/api/v1/") && !url.includes("/api/v1/auth/")) {
+      localStorage.removeItem("finadvisor_token");
+      localStorage.removeItem("finadvisor_user_id");
+      window.location.href = "/login";
+    }
+    return response;
+  };
+})();
+
 function applySavedTheme() {
   const theme = localStorage.getItem("finadvisor_theme") || "default";
   document.body.className = "";

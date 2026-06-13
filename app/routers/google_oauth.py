@@ -17,6 +17,7 @@ from app.models.email_config import EmailConfig
 from app.models.enums import EmailAuthType
 from app.models.user import User
 from app.services.crypto_service import encrypt_text
+from app.core.security import create_access_token
 
 router = APIRouter(prefix="/api/v1/auth/google", tags=["google-oauth"])
 
@@ -184,6 +185,7 @@ async def login_callback(request: Request, db: AsyncSession = Depends(get_db)) -
             await db.commit()
             await db.refresh(user)
 
+        access_token = create_access_token(user.id)
         params = urlencode(
             {
                 "google_login": "1",
@@ -191,6 +193,7 @@ async def login_callback(request: Request, db: AsyncSession = Depends(get_db)) -
                 "customer_id": user.customer_id,
                 "full_name": user.full_name,
                 "email": user.email,
+                "access_token": access_token,
             }
         )
         return RedirectResponse(url=f"/login?{params}")

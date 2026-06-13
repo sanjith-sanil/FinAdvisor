@@ -11,6 +11,7 @@ from app.models.enums import EmailAuthType, SmsSourceType
 from app.models.sms_email_raw import SmsEmailRaw
 from app.models.user import User
 from app.schemas.email_config import EmailConfigStatusOut, EmailSetupRequest, EmailTestRequest, EmailIngestRequest
+from app.core.security import get_current_user
 from app.services.bank_domain_whitelist import BANK_DOMAINS
 from app.services.crypto_service import encrypt_text
 from app.services.email_collector_service import (
@@ -63,7 +64,10 @@ async def run_email_sync(user_id: uuid.UUID, config_id: uuid.UUID, force_full_sy
 
 
 @router.post("/test-connection")
-async def test_connection(payload: EmailTestRequest) -> dict:
+async def test_connection(
+    payload: EmailTestRequest,
+    current_user: User = Depends(get_current_user),
+) -> dict:
     service = EmailCollectorService()
     return await service.test_connection(payload.email_address, payload.password, payload.imap_server)
 
@@ -73,7 +77,10 @@ async def setup_imap(
     payload: EmailSetupRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if payload.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     user = await db.get(User, payload.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -130,7 +137,13 @@ async def setup_imap(
 
 
 @router.get("/sync-status")
-async def sync_status(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def sync_status(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(EmailConfig).where(EmailConfig.user_id == user_id)
     config = (await db.execute(stmt)).scalar_one_or_none()
     if not config:
@@ -167,7 +180,13 @@ async def sync_status(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) ->
 
 
 @router.get("/status", response_model=EmailConfigStatusOut)
-async def status(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> EmailConfigStatusOut:
+async def status(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EmailConfigStatusOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(EmailConfig).where(EmailConfig.user_id == user_id)
     config = (await db.execute(stmt)).scalar_one_or_none()
     if not config:
@@ -257,7 +276,10 @@ async def check_now(
     user_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(EmailConfig).where(EmailConfig.user_id == user_id)
     config = (await db.execute(stmt)).scalar_one_or_none()
     if not config:
@@ -273,7 +295,13 @@ async def check_now(
 
 
 @router.delete("/disconnect")
-async def disconnect(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def disconnect(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(EmailConfig).where(EmailConfig.user_id == user_id)
     config = (await db.execute(stmt)).scalar_one_or_none()
     if not config:
@@ -287,7 +315,13 @@ async def disconnect(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> 
 
 
 @router.put("/toggle")
-async def toggle(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def toggle(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(EmailConfig).where(EmailConfig.user_id == user_id)
     config = (await db.execute(stmt)).scalar_one_or_none()
     if not config:
@@ -300,8 +334,11 @@ async def toggle(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict
 @router.post("/ingest-test")
 async def ingest_test_email(
     payload: EmailIngestRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if payload.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     import datetime
     from app.services.bank_domain_whitelist import get_bank_info
     from app.services.emi_upsert_service import process_emi_from_email

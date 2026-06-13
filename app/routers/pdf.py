@@ -7,6 +7,8 @@ from app.db.database import get_db
 from app.models.enums import PdfStatus, TransactionSource
 from app.models.pdf_upload import PdfUpload
 from app.models.transaction import Transaction
+from app.models.user import User
+from app.core.security import get_current_user
 from app.schemas.pdf_upload import PdfUploadOut
 from app.services.pdf_parser_service import parse_pdf
 from app.utils.files import save_upload_file
@@ -27,7 +29,11 @@ async def upload_pdf(
     password: str | None = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PdfUploadOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -35,8 +41,11 @@ async def upload_pdf(
     card = None
     if card_id:
         card = await db.get(Card, card_id)
-        if card and not bank_name:
-            bank_name = card.bank_name
+        if card:
+            if card.user_id != current_user.id:
+                raise HTTPException(status_code=403, detail="Forbidden: You do not own this card")
+            if not bank_name:
+                bank_name = card.bank_name
 
     file_path = save_upload_file(file, prefix="statement-")
     upload = PdfUpload(
@@ -128,17 +137,26 @@ async def upload_pdf(
     return upload
 
 
-
 @router.get("/uploads", response_model=list[PdfUploadOut])
-async def list_uploads(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> list[PdfUploadOut]:
+async def list_uploads(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[PdfUploadOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(PdfUpload).where(PdfUpload.user_id == user_id)
     return (await db.execute(stmt)).scalars().all()
 
 
 @router.get("/uploads/{upload_id}", response_model=PdfUploadOut)
-async def upload_status(upload_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> PdfUploadOut:
+async def upload_status(
+    upload_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PdfUploadOut:
     upload = await db.get(PdfUpload, upload_id)
-    if not upload:
+    if not upload or upload.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Upload not found")
     return upload
 
@@ -148,9 +166,10 @@ async def reparse_upload(
     upload_id: uuid.UUID,
     password: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PdfUploadOut:
     upload = await db.get(PdfUpload, upload_id)
-    if not upload:
+    if not upload or upload.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Upload not found")
 
     upload.status = PdfStatus.processing

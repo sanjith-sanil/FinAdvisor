@@ -46,6 +46,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem("finadvisor_customer_id", params.get("customer_id") || "");
     localStorage.setItem("finadvisor_name", params.get("full_name") || "");
     localStorage.setItem("finadvisor_email", params.get("email") || "");
+    const token = params.get("access_token");
+    if (token) {
+      localStorage.setItem("finadvisor_token", token);
+    }
     await cacheEmailDataOnLogin(params.get("user_id"));
     window.location.href = "/home";
     return;
@@ -115,6 +119,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("finadvisor_customer_id", data.customer_id);
         localStorage.setItem("finadvisor_name", data.full_name);
         localStorage.setItem("finadvisor_email", data.email);
+        if (data.access_token) {
+          localStorage.setItem("finadvisor_token", data.access_token);
+        }
         await cacheEmailDataOnLogin(data.user_id);
         window.location.href = "/home";
       } catch (error) {
@@ -299,6 +306,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.setItem("finadvisor_user_id", data.user_id);
         localStorage.setItem("finadvisor_customer_id", data.customer_id);
         localStorage.setItem("finadvisor_name", data.full_name);
+        if (data.access_token) {
+          localStorage.setItem("finadvisor_token", data.access_token);
+        }
         selectedEmail.textContent = data.email;
         customerIdLabel.textContent = data.customer_id;
         const nameParts = (data.full_name || "").split(" ");

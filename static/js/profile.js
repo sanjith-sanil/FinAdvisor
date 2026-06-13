@@ -64,6 +64,7 @@ editAvatarBtn?.addEventListener("click", () => {
 
 logoutBtn?.addEventListener("click", () => {
 	localStorage.removeItem("finadvisor_user_id");
+	localStorage.removeItem("finadvisor_token");
 	window.location.href = "/signin";
 });
 
@@ -752,6 +753,7 @@ function initSecurityHandlers() {
 				localStorage.removeItem("finadvisor_name");
 				localStorage.removeItem("finadvisor_customer_id");
 				localStorage.removeItem("finadvisor_email");
+				localStorage.removeItem("finadvisor_token");
 				window.location.href = "/signin";
 			} catch (err) {
 				showToast(err.message || "Failed to delete account", "error");

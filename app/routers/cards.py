@@ -13,6 +13,8 @@ from app.models.email_config import EmailConfig
 from app.models.enums import EmailAuthType, SmsSourceType, TransactionType
 from app.models.sms_email_raw import SmsEmailRaw
 from app.models.transaction import Transaction
+from app.models.user import User
+from app.core.security import get_current_user
 from app.schemas.card import (
     CardBenefitCreate,
     CardBenefitOut,
@@ -37,12 +39,14 @@ from app.services.bank_domain_whitelist import get_bank_info
 router = APIRouter(prefix="/api/v1/cards", tags=["cards"])
 
 
-def _resolve_user_id(query_user_id: uuid.UUID | None, body_user_id: uuid.UUID | None) -> uuid.UUID:
+def _resolve_user_id(query_user_id: uuid.UUID | None, body_user_id: uuid.UUID | None, current_user_id: uuid.UUID) -> uuid.UUID:
     user_id = query_user_id or body_user_id
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
     if query_user_id and body_user_id and query_user_id != body_user_id:
         raise HTTPException(status_code=400, detail="user_id mismatch between query and body")
+    if user_id != current_user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return user_id
 
 
@@ -55,7 +59,13 @@ async def _get_card_by_owner(db: AsyncSession, card_id: uuid.UUID, user_id: uuid
 
 
 @router.get("/", response_model=list[CardOut])
-async def list_cards(user_id: uuid.UUID = Query(...), db: AsyncSession = Depends(get_db)) -> list[CardOut]:
+async def list_cards(
+    user_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[CardOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     stmt = select(Card).where(Card.user_id == user_id).order_by(desc(Card.created_at))
     return (await db.execute(stmt)).scalars().all()
 
@@ -65,8 +75,9 @@ async def create_card(
     payload: CardCreate,
     user_id: uuid.UUID | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CardOut:
-    resolved_user_id = _resolve_user_id(user_id, payload.user_id)
+    resolved_user_id = _resolve_user_id(user_id, payload.user_id, current_user.id)
     card_data = payload.model_dump()
     card_data["user_id"] = resolved_user_id
 
@@ -91,7 +102,10 @@ async def get_card(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CardOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await _get_card_by_owner(db, card_id, user_id)
 
 
@@ -100,7 +114,10 @@ async def get_card_statement_password(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     card = await _get_card_by_owner(db, card_id, user_id)
     password = None
     if card.statement_password_encrypted:
@@ -112,15 +129,15 @@ async def get_card_statement_password(
     return {"password": password}
 
 
-
 @router.put("/{card_id}", response_model=CardOut)
 async def update_card(
     card_id: uuid.UUID,
     payload: CardUpdate,
     user_id: uuid.UUID | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CardOut:
-    resolved_user_id = _resolve_user_id(user_id, payload.user_id)
+    resolved_user_id = _resolve_user_id(user_id, payload.user_id, current_user.id)
     card = await _get_card_by_owner(db, card_id, resolved_user_id)
 
     update_data = payload.model_dump(exclude_unset=True)
@@ -147,9 +164,10 @@ async def deactivate_card(
     user_id: uuid.UUID | None = Query(default=None),
     payload: dict | None = Body(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     body_user_id = payload.get("user_id") if payload else None
-    resolved_user_id = _resolve_user_id(user_id, body_user_id)
+    resolved_user_id = _resolve_user_id(user_id, body_user_id, current_user.id)
     card = await _get_card_by_owner(db, card_id, resolved_user_id)
 
     card.is_active = False
@@ -169,9 +187,10 @@ async def permanent_delete_card(
     user_id: uuid.UUID | None = Query(default=None),
     payload: dict | None = Body(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     body_user_id = payload.get("user_id") if payload else None
-    resolved_user_id = _resolve_user_id(user_id, body_user_id)
+    resolved_user_id = _resolve_user_id(user_id, body_user_id, current_user.id)
     card = await _get_card_by_owner(db, card_id, resolved_user_id)
 
     if card.is_active:
@@ -187,7 +206,10 @@ async def list_card_benefits(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[CardBenefitOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await _get_card_by_owner(db, card_id, user_id)
 
     stmt = (
@@ -204,7 +226,10 @@ async def create_card_benefit(
     payload: CardBenefitCreate,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CardBenefitOut:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await _get_card_by_owner(db, card_id, user_id)
 
     benefit = CardBenefit(
@@ -225,8 +250,9 @@ async def update_card_benefit(
     payload: CardBenefitUpdate,
     user_id: uuid.UUID | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CardBenefitOut:
-    resolved_user_id = _resolve_user_id(user_id, payload.user_id)
+    resolved_user_id = _resolve_user_id(user_id, payload.user_id, current_user.id)
     await _get_card_by_owner(db, card_id, resolved_user_id)
 
     stmt = select(CardBenefit).where(
@@ -254,7 +280,10 @@ async def delete_card_benefit(
     benefit_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await _get_card_by_owner(db, card_id, user_id)
 
     stmt = select(CardBenefit).where(
@@ -276,7 +305,10 @@ async def get_card_details(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     card = await _get_card_by_owner(db, card_id, user_id)
 
     benefits_stmt = (
@@ -364,7 +396,10 @@ async def card_transactions(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[TransactionOut]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await _get_card_by_owner(db, card_id, user_id)
     from app.models.transaction import scope_active_transactions
     stmt = select(Transaction).where(Transaction.card_id == card_id, Transaction.user_id == user_id)
@@ -381,8 +416,11 @@ async def list_card_emis(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[CardEmiOut]:
     """Return all active EMI records for a card, latest first."""
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await _get_card_by_owner(db, card_id, user_id)
     stmt = (
         select(CardEmi)
@@ -397,12 +435,15 @@ async def refresh_card_emis(
     card_id: uuid.UUID,
     user_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """Re-scan previously collected bank emails for EMI data for this card.
 
     Useful when a user adds a card after emails have already been collected,
     or when the EMI parser is improved and historical emails should be reprocessed.
     """
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     card = await _get_card_by_owner(db, card_id, user_id)
 
     # Fetch all raw bank emails for this user

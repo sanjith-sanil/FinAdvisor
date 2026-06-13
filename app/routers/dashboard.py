@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
 from app.models.card import Card
+from app.models.user import User
+from app.core.security import get_current_user
 from app.services.calculation_service import (
     ManualInputs,
     dashboard_summary,
@@ -31,8 +33,11 @@ async def get_summary(
     user_id: uuid.UUID | None = Query(default=None),
     payload: dict | None = Body(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     resolved_user_id = _resolve_user_id(user_id, payload.get("user_id") if payload else None)
+    if resolved_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await dashboard_summary(db, resolved_user_id)
 
 
@@ -42,15 +47,22 @@ async def spending_breakdown_endpoint(
     payload: dict | None = Body(default=None),
     period: str = "monthly",
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     resolved_user_id = _resolve_user_id(user_id, payload.get("user_id") if payload else None)
+    if resolved_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await spending_breakdown(db, resolved_user_id, period)
 
 
 @router.get("/card-metrics/{card_id}")
-async def card_metrics(card_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> dict:
+async def card_metrics(
+    card_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
     card = await db.get(Card, card_id)
-    if not card:
+    if not card or card.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Card not found")
     limit_val = float(card.credit_limit or 0)
     balance = float(card.current_balance or 0)
@@ -76,8 +88,11 @@ async def emi_metrics(
     user_id: uuid.UUID | None = Query(default=None),
     payload: dict | None = Body(default=None),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     resolved_user_id = _resolve_user_id(user_id, payload.get("user_id") if payload else None)
+    if resolved_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return await emi_analysis(db, resolved_user_id)
 
 
