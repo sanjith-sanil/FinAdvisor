@@ -8236,3 +8236,36 @@ body.theme-warmcharcoal .cpw-txn-row {
     grid-template-columns: 1fr;
   }
 }
+
+/* ======================================
+   FOOTER DARK THEME FIX
+====================================== */
+body.theme-graphite .footer,
+body.theme-warmcharcoal .footer {
+  background: var(--neutral-50);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.theme-graphite .footer-title,
+body.theme-warmcharcoal .footer-title {
+  color: var(--neutral-900);
+}
+
+body.theme-graphite .footer-link,
+body.theme-warmcharcoal .footer-link {
+  color: var(--neutral-400);
+}
+
+body.theme-graphite .footer-link:hover,
+body.theme-warmcharcoal .footer-link:hover {
+  color: var(--primary);
+}
+
+body.theme-graphite .footer .nav-left,
+body.theme-warmcharcoal .footer .nav-left,
+body.theme-graphite .footer .nav-left i,
+body.theme-warmcharcoal .footer .nav-left i,
+body.theme-graphite .footer .nav-left span,
+body.theme-warmcharcoal .footer .nav-left span {
+  color: var(--neutral-900);
+}
