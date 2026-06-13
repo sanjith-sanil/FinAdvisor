@@ -7285,3 +7285,42 @@ body.theme-warmcharcoal .status-badge.failed {
 .card-item-wrapper.deactivated-card .card-controls {
   filter: none;
 }
+
+/* Button Contrast Overrides for Dark Themes */
+body.theme-graphite .btn,
+body.theme-warmcharcoal .btn {
+  background: var(--neutral-100);
+  color: var(--neutral-900);
+  border-color: var(--neutral-200);
+}
+
+body.theme-graphite .btn:hover,
+body.theme-warmcharcoal .btn:hover {
+  background: var(--neutral-200);
+}
+
+body.theme-graphite .btn-outline,
+body.theme-warmcharcoal .btn-outline {
+  background: transparent;
+  color: var(--neutral-900);
+  border-color: var(--neutral-200);
+}
+
+body.theme-graphite .btn-outline:hover,
+body.theme-warmcharcoal .btn-outline:hover {
+  background: var(--neutral-100);
+}
+
+body.theme-graphite .btn-primary,
+body.theme-warmcharcoal .btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border-color: transparent;
+}
+
+body.theme-graphite .btn-secondary,
+body.theme-warmcharcoal .btn-secondary {
+  background: var(--neutral-100);
+  color: var(--neutral-900);
+  border-color: transparent;
+}
