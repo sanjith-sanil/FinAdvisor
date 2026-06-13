@@ -239,7 +239,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.location.pathname.includes("/profile")) {
     const customerPill = document.getElementById("customerId");
     if (customerPill) {
-      customerPill.textContent = "🖌️";
+      customerPill.innerHTML = `
+        <svg viewBox="0 0 512 512" width="18" height="18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="38" style="display:inline-block;vertical-align:middle;">
+          <path d="M452.37 59.63h0a40.49 40.49 0 00-57.26 0L184 294.74c23.08 4.7 46.12 27.29 49.26 49.26l219.11-227.11a40.49 40.49 0 000-57.26zM138 336c-29.88 0-54 24.5-54 54.86 0 23.95-20.88 36.57-36 36.57C64.56 449.74 92.82 464 120 464c39.78 0 72-32.73 72-73.14 0-30.36-24.12-54.86-54-54.86z" />
+          <circle cx="420" cy="92" r="14" fill="currentColor" stroke="none" />
+        </svg>
+      `;
       customerPill.style.cursor = "pointer";
       customerPill.title = "Select Theme";
       customerPill.classList.add("theme-switcher");
