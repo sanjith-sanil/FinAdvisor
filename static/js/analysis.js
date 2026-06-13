@@ -148,9 +148,8 @@ function renderSpendingBreakdown(transactions, period) {
   if (theme === "graphite") {
     colors = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b", "#3f3f46", "#18181b"];
   }
-  const isDark = theme === "dark";
   const isGraphite = theme === "graphite";
-  const chartBorderColor = isGraphite ? "#27272a" : (isDark ? "#1e293b" : "#fff");
+  const chartBorderColor = isGraphite ? "#27272a" : "#fff";
 
   const legend = document.getElementById("analysisDonutLegend");
   if (legend) {
@@ -248,17 +247,15 @@ function renderDayOfWeekChart(debits) {
   if (!window.Chart || !ctx) return;
 
   const theme = localStorage.getItem("finadvisor_theme") || "default";
-  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+  const isGraphite = theme === "graphite";
 
   let barColor = "rgba(79, 70, 229, 0.8)";
   if (theme === "graphite") {
     barColor = "#3b82f6";
-  } else if (theme === "dark") {
-    barColor = "#818cf8";
   }
 
-  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
-  const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+  const tickColor = isGraphite ? "#a1a1aa" : "#64748b";
+  const gridColor = isGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
 
   dayChartInstance = new Chart(ctx, {
     type: "bar",
@@ -310,20 +307,17 @@ function renderTrends(transactions) {
   if (monthlyTrendChartInstance) monthlyTrendChartInstance.destroy();
   if (window.Chart && trendCtx && months.length) {
     const theme = localStorage.getItem("finadvisor_theme") || "default";
-    const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+    const isGraphite = theme === "graphite";
 
     let lineColor = "#4F46E5";
     let lineBg = "rgba(79,70,229,0.08)";
     if (theme === "graphite") {
       lineColor = "#3b82f6";
       lineBg = "rgba(59, 130, 246, 0.08)";
-    } else if (theme === "dark") {
-      lineColor = "#818cf8";
-      lineBg = "rgba(129, 140, 248, 0.08)";
     }
 
-    const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
-    const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+    const tickColor = isGraphite ? "#a1a1aa" : "#64748b";
+    const gridColor = isGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
 
     monthlyTrendChartInstance = new Chart(trendCtx, {
       type: "line",
@@ -382,20 +376,17 @@ function renderDailyTrendChart(debitTxns) {
   if (!window.Chart || !ctx || !entries.length) return;
 
   const theme = localStorage.getItem("finadvisor_theme") || "default";
-  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+  const isGraphite = theme === "graphite";
 
   let lineColor = "#10B981";
   let lineBg = "rgba(16,185,129,0.08)";
   if (theme === "graphite") {
     lineColor = "#4ade80";
     lineBg = "rgba(74, 222, 128, 0.08)";
-  } else if (theme === "dark") {
-    lineColor = "#60a5fa";
-    lineBg = "rgba(96, 165, 250, 0.08)";
   }
 
-  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#64748b";
-  const gridColor = isDarkOrGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
+  const tickColor = isGraphite ? "#a1a1aa" : "#64748b";
+  const gridColor = isGraphite ? "rgba(255, 255, 255, 0.06)" : "rgba(0,0,0,0.04)";
 
   dailyTrendChartInstance = new Chart(ctx, {
     type: "line",
@@ -432,3 +423,9 @@ function renderDailyTrendChart(debitTxns) {
     },
   });
 }
+
+window.addEventListener("themeChanged", () => {
+  if (typeof applyPeriod === "function" && allTransactions.length > 0) {
+    setTimeout(() => applyPeriod(activePeriod), 50);
+  }
+});

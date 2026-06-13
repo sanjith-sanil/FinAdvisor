@@ -4,16 +4,127 @@ function applySavedTheme() {
   if (theme !== "default") {
     document.body.classList.add(`theme-${theme}`);
   }
+  window.dispatchEvent(new Event("themeChanged"));
 }
 
-function cycleTheme() {
-  const themes = ["default", "emerald", "rose", "dark", "graphite"];
-  const currentTheme = localStorage.getItem("finadvisor_theme") || "default";
-  const nextIndex = (themes.indexOf(currentTheme) + 1) % themes.length;
-  const nextTheme = themes[nextIndex];
-  localStorage.setItem("finadvisor_theme", nextTheme);
-  applySavedTheme();
-  showToast(`Theme changed to ${nextTheme}`, "success");
+function openThemeSelector() {
+  const existing = document.getElementById("themeSelectorModal");
+  if (existing) existing.remove();
+
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+
+  const modalHtml = `
+    <div class="modal-overlay" id="themeSelectorModal" style="position:fixed;inset:0;background:rgba(15,23,42,0.65);display:flex;justify-content:center;align-items:center;z-index:9999;backdrop-filter:blur(6px);animation:fadeIn 0.2s ease;">
+      <style>
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .theme-modal-card {
+          background: var(--neutral-50, white);
+          border-radius: 20px;
+          border: 1px solid var(--neutral-100, #e2e8f0);
+          width: min(360px, 92vw);
+          padding: 24px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+          animation: scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: relative;
+        }
+        
+        .theme-option-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px;
+          border-radius: 12px;
+          border: 2px solid var(--neutral-100, #cbd5e1);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: rgba(255, 255, 255, 0.03);
+          margin-top: 12px;
+        }
+        
+        .theme-option-card:hover {
+          border-color: var(--primary) !important;
+          background: var(--primary-light) !important;
+          transform: translateY(-2px);
+        }
+        
+        .theme-option-card.active {
+          border-color: var(--primary) !important;
+          background: var(--primary-light) !important;
+        }
+
+        .theme-color-dot {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          display: inline-block;
+          border: 1px solid rgba(0,0,0,0.1);
+        }
+      </style>
+      <div class="theme-modal-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3 style="margin:0;font-size:18px;font-weight:700;color:var(--neutral-900);">Select Theme</h3>
+          <button id="closeThemeModal" style="background:none;border:none;cursor:pointer;font-size:24px;color:var(--neutral-500);display:flex;align-items:center;justify-content:center;padding:0;width:30px;height:30px;line-height:30px;">&times;</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <!-- Default -->
+          <div class="theme-option-card ${theme === 'default' ? 'active' : ''}" data-theme="default">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;gap:4px;">
+                <span class="theme-color-dot" style="background:#f4f7ff;"></span>
+                <span class="theme-color-dot" style="background:#4f46e5;"></span>
+              </div>
+              <span style="font-weight:600;font-size:14px;color:var(--neutral-900);">Default Light</span>
+            </div>
+            <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'default' ? '✓' : ''}</div>
+          </div>
+          <!-- Graphite -->
+          <div class="theme-option-card ${theme === 'graphite' ? 'active' : ''}" data-theme="graphite">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;gap:4px;">
+                <span class="theme-color-dot" style="background:#18181b;border-color:#3f3f46;"></span>
+                <span class="theme-color-dot" style="background:#3b82f6;"></span>
+              </div>
+              <span style="font-weight:600;font-size:14px;color:var(--neutral-900);">Graphite Dark</span>
+            </div>
+            <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'graphite' ? '✓' : ''}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.getElementById("themeSelectorModal");
+  
+  const closeModal = () => {
+    modal.style.opacity = "0";
+    modal.style.transition = "opacity 0.15s ease";
+    setTimeout(() => modal.remove(), 150);
+  };
+
+  modal.querySelector("#closeThemeModal").addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  modal.querySelectorAll(".theme-option-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const selectedTheme = card.dataset.theme;
+      localStorage.setItem("finadvisor_theme", selectedTheme);
+      applySavedTheme();
+      
+      modal.querySelectorAll(".theme-option-card").forEach((c) => {
+        c.classList.toggle("active", c.dataset.theme === selectedTheme);
+        c.querySelector(".theme-check-icon").textContent = c.dataset.theme === selectedTheme ? "✓" : "";
+      });
+
+      showToast(`Theme changed to ${selectedTheme === 'default' ? 'Default Light' : 'Graphite Dark'}`, "success");
+      setTimeout(closeModal, 200);
+    });
+  });
 }
 
 applySavedTheme();
@@ -130,9 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (customerPill) {
       customerPill.textContent = "🖌️";
       customerPill.style.cursor = "pointer";
-      customerPill.title = "Change Theme";
+      customerPill.title = "Select Theme";
       customerPill.classList.add("theme-switcher");
-      customerPill.addEventListener("click", cycleTheme);
+      customerPill.addEventListener("click", openThemeSelector);
     }
   }
 

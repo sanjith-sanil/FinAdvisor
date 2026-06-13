@@ -193,9 +193,8 @@ function renderCategoryChart(categoryData) {
   if (theme === "graphite") {
     palette = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b"];
   }
-  const isDark = theme === "dark";
   const isGraphite = theme === "graphite";
-  const chartBorderColor = isGraphite ? "#27272a" : (isDark ? "#1e293b" : "#fff");
+  const chartBorderColor = isGraphite ? "#27272a" : "#fff";
 
   categoryChart = new Chart(chartCanvas, {
     type: "doughnut",
@@ -260,7 +259,7 @@ function loadMonthlyTrendChart(summary) {
 
   const ctx = canvas.getContext("2d");
   const theme = localStorage.getItem("finadvisor_theme") || "default";
-  const isDarkOrGraphite = ["dark", "graphite"].includes(theme);
+  const isGraphite = theme === "graphite";
 
   let barColors;
   if (theme === "graphite") {
@@ -274,8 +273,8 @@ function loadMonthlyTrendChart(summary) {
     barColors = gradient;
   }
 
-  const tickColor = isDarkOrGraphite ? "#a1a1aa" : "#94A3B8";
-  const gridColor = isDarkOrGraphite ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const tickColor = isGraphite ? "#a1a1aa" : "#94A3B8";
+  const gridColor = isGraphite ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   trendChart = new Chart(canvas, {
     type: "bar",
@@ -625,4 +624,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setDashboardTab(target === "manual" ? "manual" : "auto");
     });
   });
+});
+
+window.addEventListener("themeChanged", () => {
+  if (typeof loadDashboardData === "function") {
+    setTimeout(() => loadDashboardData(), 50);
+  }
 });
