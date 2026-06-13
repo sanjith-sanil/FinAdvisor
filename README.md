@@ -49,27 +49,6 @@ To stop and remove containers:
 docker compose down
 ```
 
-
-
-
-
-<!--
-C:\Users\Prajwal Nair\OneDrive\Desktop\New folder>cd FinAdvisor
-
-C:\Users\Prajwal Nair\OneDrive\Desktop\New folder\FinAdvisor>python -m venv .venv
-
-C:\Users\Prajwal Nair\OneDrive\Desktop\New folder\FinAdvisor>.venv\Scripts\activate -->
-
-<!-- to run this project  -->
-<!--
-py -3.11 -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn main:app --reload
--->
-
-
 py -3.11 -m venv .venv
 .venv\Scripts\activate
 pip install --upgrade pip
