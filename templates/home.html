@@ -19,112 +19,68 @@
         <a class="btn btn-outline" href="/cards" style="padding: 12px 20px; font-size: 13px; border-radius: 12px; margin-top: 0;">Add Your Cards</a>
       </div>
     </div>
-    <div class="mockup-wrap" style="display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; max-width: 420px; margin: 0 auto;">
-      <!-- Premium Flip Card -->
-      <div class="home-card-flip">
-        <div class="card-flipper">
-          <!-- Card Front -->
-          <div class="card-face home-card-front">
-            <div class="hc-glow hc-glow-a"></div>
-            <div class="hc-glow hc-glow-b"></div>
-            <div class="hc-shimmer"></div>
-            <div class="hc-content">
-              <div class="hc-top-row">
-                <div>
-                  <div class="hc-brand">FINADVISOR</div>
-                  <div class="hc-tier">PLATINUM SELECT</div>
-                </div>
-                <svg class="hc-nfc" width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <path d="M3 11C3 6.58 6.58 3 11 3" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M6.5 11C6.5 8.51 8.51 6.5 11 6.5" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
-                  <path d="M10 11C10 10.45 10.45 10 11 10" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
-                  <circle cx="11" cy="11" r="1.5" fill="rgba(255,255,255,0.7)"/>
-                </svg>
-              </div>
-              <div class="hc-chip">
-                <div class="hc-chip-inner">
-                  <div class="hc-chip-line-h"></div>
-                  <div class="hc-chip-line-v"></div>
-                </div>
-              </div>
-              <div class="hc-number">•••• &nbsp;•••• &nbsp;•••• &nbsp;8888</div>
-              <div class="hc-bottom-row">
-                <div>
-                  <div class="hc-label">Card Holder</div>
-                  <div class="hc-value">DEMO USER</div>
-                </div>
-                <div>
-                  <div class="hc-label">Valid Thru</div>
-                  <div class="hc-value">12/29</div>
-                </div>
-                <div class="hc-network">
-                  <div class="hc-nc1"></div>
-                  <div class="hc-nc2"></div>
-                </div>
-              </div>
-            </div>
+    <div class="mockup-wrap">
+      <div class="credit-pulse-widget glass-card-mockup">
+        <!-- Header -->
+        <div class="cpw-header">
+          <div class="cpw-header-left">
+            <i data-lucide="activity" class="cpw-header-icon"></i>
+            <span class="cpw-header-title">Credit Overview</span>
           </div>
-          <!-- Card Back -->
-          <div class="card-face card-back home-card-back">
-            <div class="hc-glow hc-glow-c"></div>
-            <div class="hc-glow hc-glow-d"></div>
-            <div class="hc-stripe"></div>
-            <div class="hc-back-body">
-              <div class="hc-util-row">
-                <span class="hc-util-lbl">Limit Utilization</span>
-                <span id="homeCardUsagePct" class="hc-util-pct">0% used</span>
-              </div>
-              <div class="hc-bar-bg">
-                <div id="homeCardUsageBar" class="hc-bar-fill"></div>
-              </div>
-              <div class="hc-stats-row">
-                <div>
-                  <div class="hc-slabel">Available</div>
-                  <div id="homeCardAvailText" class="hc-sval">₹0</div>
-                </div>
-                <div style="text-align: right;">
-                  <div class="hc-slabel">Total Limit</div>
-                  <div id="homeCardLimitText" class="hc-sval">₹0</div>
-                </div>
-              </div>
-              <div class="hc-cvv-row">
-                <div class="hc-cvv">CVV ● ● ●</div>
-                <div class="hc-network hc-network-sm">
-                  <div class="hc-nc1"></div>
-                  <div class="hc-nc2"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Financial Overview Card -->
-      <div class="glass-card-mockup" style="width: 100%; border-radius: 16px; padding: 20px; box-sizing: border-box;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--neutral-900); display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="line-chart" style="width: 14px; height: 14px; color: var(--primary);"></i>
-            Overview
+          <span class="cpw-live-badge">
+            <span class="cpw-live-dot"></span>Live
           </span>
-          <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;"></span>
         </div>
-        <div id="homeOverviewAmount" style="font-size: 22px; font-weight: 800; color: var(--neutral-900); margin-bottom: 2px;">—</div>
-        <div style="font-size: 10px; color: var(--neutral-500); margin-bottom: 12px; font-weight: 500;">Total Available Credit Limit</div>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-          <span class="badge badge-used" style="font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">Used: <span id="homeUsedPct">—</span></span>
-          <span class="badge badge-avail" style="font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">Available: <span id="homeAvailPct">—</span></span>
-          <span class="badge badge-cards" style="font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">Cards: <span id="homeCardCount">—</span></span>
-        </div>
-        <div style="height: 6px; border-radius: 6px; background: var(--neutral-100); overflow: hidden; margin-bottom: 16px;">
-          <div id="homeUsageBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.6s ease;"></div>
-        </div>
-        <!-- Glassmorphic transaction sub-panel -->
-        <div style="background: rgba(0,0,0,0.02); border-radius: 10px; padding: 12px; border: 1px solid var(--neutral-100);">
-          <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--neutral-500); margin-bottom: 8px; letter-spacing: 0.5px;">Recent Transactions</div>
-          <div id="homeTransactionsList" style="font-size: 11px; display: flex; flex-direction: column; gap: 6px;"></div>
-        </div>
-      </div>
 
+        <!-- SVG Ring Gauge -->
+        <div class="cpw-ring-section">
+          <div class="cpw-ring-wrap">
+            <svg class="cpw-ring-svg" viewBox="0 0 140 140" fill="none">
+              <defs>
+                <linearGradient id="cpwGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#818cf8"/>
+                  <stop offset="55%" stop-color="#6366f1"/>
+                  <stop offset="100%" stop-color="#4338ca"/>
+                </linearGradient>
+              </defs>
+              <circle class="cpw-track" cx="70" cy="70" r="56"/>
+              <circle id="cpwArc" class="cpw-arc" cx="70" cy="70" r="56"/>
+            </svg>
+            <div class="cpw-ring-center">
+              <div id="cpwUtilPct" class="cpw-util-num">—</div>
+              <div class="cpw-util-lbl">utilized</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="cpw-stats">
+          <div class="cpw-stat">
+            <div id="cpwAvailAmt" class="cpw-stat-val">—</div>
+            <div class="cpw-stat-lbl">Available</div>
+          </div>
+          <div class="cpw-stat-sep"></div>
+          <div class="cpw-stat">
+            <div id="cpwLimitAmt" class="cpw-stat-val">—</div>
+            <div class="cpw-stat-lbl">Total Limit</div>
+          </div>
+          <div class="cpw-stat-sep"></div>
+          <div class="cpw-stat">
+            <div id="cpwCardsCnt" class="cpw-stat-val">—</div>
+            <div class="cpw-stat-lbl">Cards</div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="cpw-divider"></div>
+
+        <!-- Recent Activity -->
+        <div class="cpw-activity-header">
+          <span class="cpw-activity-title">Recent Activity</span>
+          <a href="/history" class="cpw-view-all">View all →</a>
+        </div>
+        <div id="homeTransactionsList" class="cpw-txn-list"></div>
+      </div>
     </div>
   </div>
 
@@ -221,89 +177,77 @@
     const userId = localStorage.getItem("finadvisor_user_id");
     if (!userId) return;
 
+    const CIRC = 351.86; // 2 * Math.PI * 56
+
+    // ── Cards → ring + stats ──────────────────────────────
     fetch(`/api/v1/cards?user_id=${userId}`)
-      .then((r) => r.json())
-      .then((cards) => {
+      .then(r => r.json())
+      .then(cards => {
         if (!Array.isArray(cards) || cards.length === 0) return;
-
-        const activeCards = cards.filter((c) => c.is_active !== false);
-        const count = activeCards.length;
-
-        let totalLimit = 0;
-        let totalUsed = 0;
-
-        activeCards.forEach((c) => {
-          const lim = parseFloat(c.credit_limit) || 0;
-          const used = parseFloat(c.current_balance) || 0;
-          totalLimit += lim;
-          totalUsed += used;
+        const active = cards.filter(c => c.is_active !== false);
+        let totalLimit = 0, totalUsed = 0;
+        active.forEach(c => {
+          totalLimit += parseFloat(c.credit_limit) || 0;
+          totalUsed  += parseFloat(c.current_balance) || 0;
         });
+        const totalAvail = Math.max(0, totalLimit - totalUsed);
+        const usedPct    = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
+        const fmt = n => "₹" + Math.round(n).toLocaleString("en-IN");
 
-        const totalAvailable = Math.max(0, totalLimit - totalUsed);
-        const usedPct = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
-        const availPct = 100 - usedPct;
+        // Animate SVG arc
+        const arc = document.getElementById("cpwArc");
+        if (arc) {
+          setTimeout(() => {
+            arc.style.strokeDashoffset = CIRC * (1 - usedPct / 100);
+          }, 120);
+        }
 
-        const fmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+        // Count-up animation for % label
+        const pctEl = document.getElementById("cpwUtilPct");
+        if (pctEl) {
+          let curr = 0;
+          const step = () => {
+            curr = Math.min(curr + Math.max(1, Math.ceil(usedPct / 40)), usedPct);
+            pctEl.textContent = curr + "%";
+            if (curr < usedPct) requestAnimationFrame(step);
+          };
+          setTimeout(step, 180);
+        }
 
-        const amountEl = document.getElementById("homeOverviewAmount");
-        const usedEl   = document.getElementById("homeUsedPct");
-        const availEl  = document.getElementById("homeAvailPct");
-        const countEl  = document.getElementById("homeCardCount");
-        const barEl    = document.getElementById("homeUsageBar");
-
-        const cardUsagePctEl = document.getElementById("homeCardUsagePct");
-        const cardUsageBarEl = document.getElementById("homeCardUsageBar");
-        const cardAvailTextEl = document.getElementById("homeCardAvailText");
-        const cardLimitTextEl = document.getElementById("homeCardLimitText");
-
-        if (amountEl) amountEl.textContent = fmt(totalAvailable);
-        if (usedEl)   usedEl.textContent   = usedPct + "%";
-        if (availEl)  availEl.textContent  = availPct + "%";
-        if (countEl)  countEl.textContent  = count;
-        if (barEl)    barEl.style.width    = usedPct + "%";
-
-        if (cardUsagePctEl) cardUsagePctEl.textContent = usedPct + "% used";
-        if (cardUsageBarEl) cardUsageBarEl.style.width = usedPct + "%";
-        if (cardAvailTextEl) cardAvailTextEl.textContent = fmt(totalAvailable);
-        if (cardLimitTextEl) cardLimitTextEl.textContent = fmt(totalLimit);
+        const setEl = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+        setEl("cpwAvailAmt", fmt(totalAvail));
+        setEl("cpwLimitAmt", fmt(totalLimit));
+        setEl("cpwCardsCnt", active.length);
       })
       .catch(() => {});
 
-    fetch(`/api/v1/transactions?user_id=${userId}&limit=3`)
-      .then((r) => r.json())
-      .then((transactions) => {
-        if (!Array.isArray(transactions) || transactions.length === 0) return;
-        const listEl = document.getElementById("homeTransactionsList");
-        if (!listEl) return;
-
-        listEl.innerHTML = "";
-        transactions.forEach((t, index) => {
-          const isLast = index === transactions.length - 1;
-          const borderStyle = isLast ? "" : "border-bottom: 1px solid var(--neutral-100);";
+    // ── Transactions → activity list ─────────────────────
+    fetch(`/api/v1/transactions?user_id=${userId}&limit=4`)
+      .then(r => r.json())
+      .then(txns => {
+        if (!Array.isArray(txns) || txns.length === 0) return;
+        const list = document.getElementById("homeTransactionsList");
+        if (!list) return;
+        list.innerHTML = "";
+        txns.forEach(t => {
           const isDebit = t.transaction_type === "debit";
-          const sign = isDebit ? "-" : "+";
-          const color = isDebit ? "var(--danger)" : "var(--success)";
-          
-          const name = t.merchant_name || t.description || "Transaction";
-          const formattedAmount = sign + "₹" + Math.round(t.amount).toLocaleString("en-IN");
-
-          const row = document.createElement("div");
-          row.style = `display: flex; justify-content: space-between; padding: 6px 0; ${borderStyle}`;
-          
-          const nameSpan = document.createElement("span");
-          nameSpan.textContent = name;
-          
-          const amountSpan = document.createElement("span");
-          amountSpan.style.color = color;
-          amountSpan.style.fontWeight = "600";
-          amountSpan.textContent = formattedAmount;
-
-          row.appendChild(nameSpan);
-          row.appendChild(amountSpan);
-          listEl.appendChild(row);
+          const sign    = isDebit ? "-" : "+";
+          const amt     = sign + "₹" + Math.round(t.amount).toLocaleString("en-IN");
+          const name    = t.merchant_name || t.description || "Transaction";
+          const row     = document.createElement("div");
+          row.className = "cpw-txn-row";
+          row.innerHTML = `
+            <div class="cpw-txn-left">
+              <span class="cpw-txn-dot ${isDebit ? "cpw-dot-debit" : "cpw-dot-credit"}"></span>
+              <span class="cpw-txn-name">${name}</span>
+            </div>
+            <span class="cpw-txn-amt ${isDebit ? "cpw-amt-debit" : "cpw-amt-credit"}">${amt}</span>
+          `;
+          list.appendChild(row);
         });
       })
       .catch(() => {});
   });
 </script>
 {% endblock %}
+

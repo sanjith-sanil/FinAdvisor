@@ -31,19 +31,6 @@ document.querySelectorAll(".toggle").forEach((toggle) => {
 	});
 });
 
-// Email Auto-Collection accordion
-const emailAccordionHeader = document.getElementById("emailAutoCollectionHeader");
-const emailAccordionBody   = document.getElementById("emailAutoCollectionBody");
-const emailAccordionChevron = document.getElementById("emailAutoCollectionChevron");
-if (emailAccordionHeader && emailAccordionBody) {
-	emailAccordionHeader.addEventListener("click", () => {
-		const isOpen = emailAccordionBody.style.display === "block";
-		emailAccordionBody.style.display = isOpen ? "none" : "block";
-		if (emailAccordionChevron) {
-			emailAccordionChevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-		}
-	});
-}
 
 document.querySelectorAll(".toggle-password").forEach((btn) => {
 	btn.addEventListener("click", () => {
