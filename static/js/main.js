@@ -90,6 +90,17 @@ function openThemeSelector() {
             </div>
             <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'graphite' ? '✓' : ''}</div>
           </div>
+          <!-- Warm Charcoal -->
+          <div class="theme-option-card ${theme === 'warmcharcoal' ? 'active' : ''}" data-theme="warmcharcoal">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;gap:4px;">
+                <span class="theme-color-dot" style="background:#1c1917;border-color:#3d3530;"></span>
+                <span class="theme-color-dot" style="background:#f59e0b;"></span>
+              </div>
+              <span style="font-weight:600;font-size:14px;color:var(--neutral-900);">Warm Charcoal</span>
+            </div>
+            <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'warmcharcoal' ? '✓' : ''}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -121,7 +132,12 @@ function openThemeSelector() {
         c.querySelector(".theme-check-icon").textContent = c.dataset.theme === selectedTheme ? "✓" : "";
       });
 
-      showToast(`Theme changed to ${selectedTheme === 'default' ? 'Default Light' : 'Graphite Dark'}`, "success");
+      const readableNames = {
+        default: 'Default Light',
+        graphite: 'Graphite Dark',
+        warmcharcoal: 'Warm Charcoal'
+      };
+      showToast(`Theme changed to ${readableNames[selectedTheme] || selectedTheme}`, "success");
       setTimeout(closeModal, 200);
     });
   });

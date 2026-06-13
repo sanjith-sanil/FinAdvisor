@@ -6887,3 +6887,76 @@ body.theme-graphite .trend-pill.positive {
 body.theme-graphite .trend-pill.negative {
   color: var(--danger) !important;
 }
+
+/* Warm Charcoal Theme */
+body.theme-warmcharcoal {
+  --primary: #f59e0b;
+  --secondary: #fbbf24;
+  --primary-light: rgba(245, 158, 11, 0.12);
+  --neutral-50: #1c1917;
+  --neutral-100: #292524;
+  --neutral-200: #3d3530;
+  --neutral-400: #a8a29e;
+  --neutral-500: #a8a29e;
+  --neutral-600: #a8a29e;
+  --neutral-700: #fafaf9;
+  --neutral-900: #fafaf9;
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #f59e0b;
+  --badge-bg: #3d3530;
+  background: #1c1917;
+  color: var(--neutral-900);
+}
+
+body.theme-warmcharcoal .navbar {
+  background: rgba(18, 17, 16, 0.9);
+  border-bottom: 1px solid var(--neutral-100);
+}
+
+body.theme-warmcharcoal .glass-card {
+  background: rgba(41, 37, 36, 0.85);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(61, 53, 48, 0.5);
+}
+
+body.theme-warmcharcoal input,
+body.theme-warmcharcoal select,
+body.theme-warmcharcoal textarea {
+  background: #292524;
+  color: var(--neutral-900);
+  border-color: var(--neutral-200);
+}
+
+body.theme-warmcharcoal input:focus,
+body.theme-warmcharcoal select:focus,
+body.theme-warmcharcoal textarea:focus {
+  background: #292524 !important;
+  color: white;
+}
+
+body.theme-warmcharcoal .theme-switcher {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.theme-warmcharcoal .theme-switcher:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+body.theme-warmcharcoal .nav-link:hover,
+body.theme-warmcharcoal .nav-link.active {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+body.theme-warmcharcoal .trend-pill {
+  background: var(--badge-bg) !important;
+}
+
+body.theme-warmcharcoal .trend-pill.positive {
+  color: var(--success) !important;
+}
+
+body.theme-warmcharcoal .trend-pill.negative {
+  color: var(--danger) !important;
+}

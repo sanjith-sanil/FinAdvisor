@@ -192,9 +192,11 @@ function renderCategoryChart(categoryData) {
   let palette = ["#2563eb", "#7c3aed", "#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#14b8a6", "#64748b"];
   if (theme === "graphite") {
     palette = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b"];
+  } else if (theme === "warmcharcoal") {
+    palette = ["#f59e0b", "#fbbf24", "#d97706", "#b45309", "#f97316", "#ea580c", "#c2410c", "#7c2d12"];
   }
-  const isGraphite = theme === "graphite";
-  const chartBorderColor = isGraphite ? "#27272a" : "#fff";
+  const isCustomDark = ["graphite", "warmcharcoal"].includes(theme);
+  const chartBorderColor = isCustomDark ? (theme === "graphite" ? "#27272a" : "#292524") : "#fff";
 
   categoryChart = new Chart(chartCanvas, {
     type: "doughnut",
@@ -259,12 +261,12 @@ function loadMonthlyTrendChart(summary) {
 
   const ctx = canvas.getContext("2d");
   const theme = localStorage.getItem("finadvisor_theme") || "default";
-  const isGraphite = theme === "graphite";
+  const isCustomDark = ["graphite", "warmcharcoal"].includes(theme);
 
   let barColors;
-  if (theme === "graphite") {
-    const chartPrimary = getComputedStyle(document.body).getPropertyValue("--chart-primary").trim() || "#3b82f6";
-    const chartSecondary = getComputedStyle(document.body).getPropertyValue("--chart-secondary").trim() || "#6366f1";
+  if (isCustomDark) {
+    const chartPrimary = getComputedStyle(document.body).getPropertyValue("--chart-primary").trim() || (theme === "graphite" ? "#3b82f6" : "#f59e0b");
+    const chartSecondary = getComputedStyle(document.body).getPropertyValue("--chart-secondary").trim() || (theme === "graphite" ? "#6366f1" : "#fbbf24");
     barColors = [chartSecondary, chartPrimary, chartPrimary];
   } else {
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -273,8 +275,8 @@ function loadMonthlyTrendChart(summary) {
     barColors = gradient;
   }
 
-  const tickColor = isGraphite ? "#a1a1aa" : "#94A3B8";
-  const gridColor = isGraphite ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const tickColor = isCustomDark ? "#a1a1aa" : "#94A3B8";
+  const gridColor = isCustomDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
 
   trendChart = new Chart(canvas, {
     type: "bar",
