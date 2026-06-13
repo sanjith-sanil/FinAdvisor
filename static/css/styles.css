@@ -7324,3 +7324,126 @@ body.theme-warmcharcoal .btn-secondary {
   color: var(--neutral-900);
   border-color: transparent;
 }
+
+/* Modernized Hero & landing styles */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.65; }
+}
+
+.glow-blob {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+  animation: float-slow 8s ease-in-out infinite, pulse-slow 6s ease-in-out infinite;
+}
+
+.glow-blob-1 {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+  top: -10%;
+  right: 15%;
+}
+
+.glow-blob-2 {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  bottom: 10%;
+  left: 20%;
+  animation-delay: -3s;
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+}
+
+.mockup-wrap {
+  z-index: 2;
+  perspective: 1000px;
+}
+
+.glass-card-mockup {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-mockup:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+body.theme-graphite .glass-card-mockup {
+  background: rgba(39, 39, 42, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+body.theme-warmcharcoal .glass-card-mockup {
+  background: rgba(41, 37, 36, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+body.theme-graphite .glass-card-mockup:hover,
+body.theme-warmcharcoal .glass-card-mockup:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Feature cards hover style */
+.feature-card.glass-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-card.glass-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: var(--primary);
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.15);
+}
+
+/* Interactive flip card in hero */
+.home-card-flip {
+  perspective: 1000px;
+  cursor: pointer;
+  margin: 0 auto 20px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.home-card-flip .card-flipper {
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+  position: relative;
+  height: 190px;
+  width: 100%;
+}
+
+.home-card-flip:hover .card-flipper {
+  transform: rotateY(180deg);
+}
+
+.home-card-flip .card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.home-card-flip .card-back {
+  transform: rotateY(180deg);
+}
