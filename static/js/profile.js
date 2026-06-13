@@ -4,6 +4,16 @@ const tabs = {
 	"auto-collection": document.getElementById("autoCollectionTab"),
 };
 
+// ── Initialise visible tab on every page load ─────────────────────────────
+// Determine which tab is marked active in the HTML (default: "personal")
+const activeTabEl = document.querySelector(".profile-tab.active");
+const initialTab  = activeTabEl ? activeTabEl.dataset.tab : "personal";
+
+// Explicitly show/hide each panel — overrides any CSS caching issues
+Object.entries(tabs).forEach(([key, el]) => {
+	if (el) el.style.display = key === initialTab ? "block" : "none";
+});
+
 document.querySelectorAll(".profile-tab").forEach((tab) => {
 	tab.addEventListener("click", () => {
 		const target = tab.dataset.tab;
