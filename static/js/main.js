@@ -1,3 +1,23 @@
+function applySavedTheme() {
+  const theme = localStorage.getItem("finadvisor_theme") || "default";
+  document.body.className = "";
+  if (theme !== "default") {
+    document.body.classList.add(`theme-${theme}`);
+  }
+}
+
+function cycleTheme() {
+  const themes = ["default", "emerald", "rose", "dark"];
+  const currentTheme = localStorage.getItem("finadvisor_theme") || "default";
+  const nextIndex = (themes.indexOf(currentTheme) + 1) % themes.length;
+  const nextTheme = themes[nextIndex];
+  localStorage.setItem("finadvisor_theme", nextTheme);
+  applySavedTheme();
+  showToast(`Theme changed to ${nextTheme}`, "success");
+}
+
+applySavedTheme();
+
 function showToast(message, type = "info") {
   const colors = {
     success: "#10B981",
@@ -23,6 +43,7 @@ function showToast(message, type = "info") {
 function getUserId() {
   return localStorage.getItem("finadvisor_user_id") || "00000000-0000-0000-0000-000000000001";
 }
+
 
 function normalizeErrorMessage(detail) {
   if (detail == null) return "Request failed";
@@ -103,6 +124,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
   setActiveNav();
   hydrateUserBadges();
+
+  if (window.location.pathname.includes("/profile")) {
+    const customerPill = document.getElementById("customerId");
+    if (customerPill) {
+      customerPill.textContent = "🖌️";
+      customerPill.style.cursor = "pointer";
+      customerPill.title = "Change Theme";
+      customerPill.classList.add("theme-switcher");
+      customerPill.addEventListener("click", cycleTheme);
+    }
+  }
 
   const menuButton = document.getElementById("mobileMenuButton");
   const navLinks = document.getElementById("navLinks");

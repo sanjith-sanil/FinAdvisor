@@ -6795,3 +6795,82 @@ small {
   background: #fef2f2;
   color: #b91c1c;
 }
+
+/* Theme Customizations */
+body.theme-emerald {
+  --primary: #059669;
+  --secondary: #10b981;
+  --primary-light: rgba(5, 150, 105, 0.12);
+}
+
+body.theme-rose {
+  --primary: #e11d48;
+  --secondary: #f43f5e;
+  --primary-light: rgba(225, 29, 72, 0.12);
+}
+
+body.theme-dark {
+  --primary: #818cf8;
+  --secondary: #60a5fa;
+  --primary-light: rgba(129, 140, 248, 0.2);
+  --neutral-50: #0f172a;
+  --neutral-100: #1e293b;
+  --neutral-200: #334155;
+  --neutral-400: #64748b;
+  --neutral-500: #94a3b8;
+  --neutral-600: #cbd5e1;
+  --neutral-700: #e2e8f0;
+  --neutral-900: #f8fafc;
+  background: #0b0f19;
+}
+
+body.theme-dark .navbar {
+  background: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid var(--neutral-100);
+}
+
+body.theme-dark .glass-card {
+  background: rgba(30, 41, 59, 0.7);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea {
+  background: #1e293b;
+  color: var(--neutral-900);
+  border-color: var(--neutral-200);
+}
+
+body.theme-dark input:focus,
+body.theme-dark select:focus,
+body.theme-dark textarea:focus {
+  background: #1e293b !important;
+  color: white;
+}
+
+.theme-switcher {
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.theme-switcher:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+}
+
+body.theme-dark .theme-switcher {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.theme-dark .theme-switcher:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
