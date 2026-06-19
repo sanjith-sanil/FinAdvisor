@@ -48,6 +48,14 @@ def _card_label(card: Card) -> str:
 
 def _match_card_query_type(text: str) -> str | None:
     value = (text or "").lower()
+    # Repayment timeline: must check BEFORE outstanding to avoid false matches
+    if any(token in value for token in [
+        "how long", "clear the bill", "clear the dues", "clear bill",
+        "repay", "pay off", "pay back", "payoff", "payback",
+        "months to clear", "time to clear", "time to pay",
+        "when will i finish", "finish paying",
+    ]):
+        return "repayment_timeline"
     if any(token in value for token in ["available", "spend", "limit", "credit limit", "limit left"]):
         return "card_available_balance"
     if any(token in value for token in ["outstanding", "owed", "dues", "balance"]):
@@ -331,6 +339,9 @@ async def chatbot_ask_card(
     query_type = _match_card_query_type(payload.typed_text)
     if query_type:
         entity_value = _card_label(card)
+        # For repayment_timeline, pass the typed text so the handler can extract the payment amount
+        if query_type == "repayment_timeline":
+            entity_value = f"{payload.typed_text} | {entity_value}"
         result = await service.resolve_answer(payload.user_id, query_type, entity_value, db)
         bot_message = await _save_message(
             db,
@@ -363,25 +374,25 @@ async def chatbot_ask_card(
     )
 
     if matched and matched.get("no_match"):
-        help_text = (
-            "I can answer questions about this card's balance, credit limit, utilization, due date, "
-            "minimum payment, EMI, and monthly spending. Try one of the suggestions above."
-        )
+        # Use AI fallback instead of a static help message
+        card_label = _card_label(card)
+        enriched_question = f"{payload.typed_text} (for my {card_label} card ending ****{card.last_four_digits})"
+        fallback = await service.answer_from_online(enriched_question, payload.user_id, db)
         bot_message = await _save_message(
             db,
             session.id,
             payload.user_id,
             "bot",
-            help_text,
+            fallback["answer_text"],
             resolved_question=payload.typed_text,
-            data_used={"source": "card_assistant"},
+            data_used=fallback.get("data"),
         )
         session.last_active = datetime.datetime.now(datetime.timezone.utc)
         session.message_count += 2
         await db.commit()
         return ChatAskResponse(
-            no_match=True,
-            message=help_text,
+            answer=fallback["answer_text"],
+            data=fallback.get("data", {}),
             suggested_questions=[
                 ChatQuestion(**{k: q[k] for k in ChatQuestion.model_fields.keys()})
                 for q in matched["suggested_questions"]

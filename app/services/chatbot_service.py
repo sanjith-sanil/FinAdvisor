@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import datetime
+import math
 import re
 import textwrap
 import uuid
@@ -1245,6 +1246,77 @@ class ChatbotService:
                     f"Minimum payment due: {_inr(min_payment)}."
                 ),
                 "data": {"balance": balance, "min_payment": min_payment, "card_label": label},
+            }
+
+        if data_query_type == "repayment_timeline":
+            # entity_value format: "user typed text | Card Label"
+            user_text = entity_value
+            card_search_label = entity_value
+            if entity_value and "|" in entity_value:
+                parts = entity_value.split("|", 1)
+                user_text = parts[0].strip()
+                card_search_label = parts[1].strip()
+
+            card = await self._find_card_by_label(user_id, card_search_label, db)
+            if not card:
+                return {"answer_text": "You haven't added any cards yet. Go to My Cards to add one.", "data": {}}
+            balance = _to_float(card.current_balance)
+            label = _card_label(card)
+            if balance <= 0:
+                return {
+                    "answer_text": f"Great news! Your {label} card has no outstanding balance. Nothing to repay!",
+                    "data": {"balance": 0, "months": 0, "card_label": label},
+                }
+
+            # Try to extract a payment amount from the user's question text
+            monthly_payment = _parse_amount_from_text(user_text)
+            if monthly_payment is None or monthly_payment <= 0:
+                monthly_payment = 15000  # sensible default
+
+            annual_rate = _to_float(card.emi_interest_rate) or 36.0  # default 36% p.a.
+            monthly_rate = annual_rate / 12 / 100
+
+            if monthly_rate > 0:
+                # Amortization: months = -ln(1 - (balance * r / payment)) / ln(1 + r)
+                ratio = balance * monthly_rate / monthly_payment
+                if ratio >= 1:
+                    # Payment doesn't even cover monthly interest
+                    return {
+                        "answer_text": (
+                            f"Paying {_inr(monthly_payment)}/month won't be enough to clear your {label} card "
+                            f"balance of {_inr(balance)} at {annual_rate}% p.a. interest. "
+                            f"The monthly interest alone is {_inr(balance * monthly_rate)}. "
+                            f"You need to pay more than {_inr(balance * monthly_rate)} per month to make progress."
+                        ),
+                        "data": {
+                            "balance": balance, "monthly_payment": monthly_payment,
+                            "annual_rate": annual_rate, "insufficient": True, "card_label": label,
+                        },
+                    }
+                months = math.ceil(-math.log(1 - ratio) / math.log(1 + monthly_rate))
+                total_paid = monthly_payment * months
+                total_interest = total_paid - balance
+            else:
+                # 0% interest — simple division
+                months = math.ceil(balance / monthly_payment)
+                total_paid = balance
+                total_interest = 0
+
+            finish_date = now + datetime.timedelta(days=30 * months)
+            return {
+                "answer_text": (
+                    f"If you pay {_inr(monthly_payment)} every month towards your {label} card "
+                    f"(outstanding: {_inr(balance)}, interest: {annual_rate}% p.a.), "
+                    f"it will take approximately **{months} months** to clear the balance. "
+                    f"You will finish around {finish_date.strftime('%B %Y')}. "
+                    f"Total amount paid: {_inr(total_paid)} (of which {_inr(total_interest)} is interest)."
+                ),
+                "data": {
+                    "balance": balance, "monthly_payment": monthly_payment,
+                    "months": months, "total_paid": total_paid,
+                    "total_interest": total_interest, "annual_rate": annual_rate,
+                    "finish_date": finish_date.isoformat(), "card_label": label,
+                },
             }
 
         if data_query_type == "weekly_spending":
