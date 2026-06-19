@@ -131,68 +131,252 @@ def generate_candidate_passwords(
 
 
 def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
+    """Parse credit-card / bank statement PDFs into transaction dicts.
+
+    Strategy 1:  Use pdfplumber's table extraction which preserves column
+                 boundaries and avoids mixing description numbers with amounts.
+    Strategy 2:  Fall back to text-line parsing with a *right-anchored*
+                 amount regex so only the trailing numeric columns are captured.
+    """
+    with _open_pdf_with_passwords(file_path, passwords) as pdf:
+        # --- Strategy 1: table-based extraction ---
+        transactions = _parse_via_tables(pdf)
+        if transactions:
+            return transactions
+
+        # --- Strategy 2: improved text-based extraction ---
+        return _parse_via_text(pdf)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 1 — table extraction
+# ---------------------------------------------------------------------------
+
+_DATE_REGEX = re.compile(
+    r"(\d{2}[/-]\d{2}[/-]\d{4}|\d{2}\s?[A-Za-z]{3,9}\s?\d{4})"
+)
+_AMOUNT_CELL = re.compile(r"^[\s]*-?[\d,]+(?:\.\d{1,2})?[\s]*$")
+
+
+def _cell_to_float(cell: str | None) -> float | None:
+    """Convert a table cell string to float, tolerating commas / whitespace."""
+    if cell is None:
+        return None
+    cleaned = cell.strip().replace(",", "").replace(" ", "")
+    if not cleaned or cleaned == "-" or cleaned == "":
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _parse_via_tables(pdf) -> list[dict]:
     transactions: list[dict] = []
     last_balance: float | None = None
 
-    date_regex = re.compile(r"(\d{2}[/-]\d{2}[/-]\d{4}|\d{2}\s?[A-Za-z]{3}\s?\d{4}|\d{2}\s?[A-Za-z]+\s?\d{4})")
-    # Robust amount regex that doesn't split 4-digit numbers like years
-    amount_regex = re.compile(r"([0-9]+(?:,[0-9]+)*(?:\.[0-9]{1,2})?)")
-    drcr_regex = re.compile(r"\b(Dr|Cr)\b", re.IGNORECASE)
+    for page in pdf.pages:
+        tables = page.extract_tables() or []
+        for table in tables:
+            if not table or len(table) < 2:
+                continue
 
-    with _open_pdf_with_passwords(file_path, passwords) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text() or ""
-            for line in text.splitlines():
-                stripped = line.strip()
-                # Ensure the line starts with a date (filters out headers/summaries)
-                date_match = date_regex.match(stripped)
-                if not date_match:
+            # Try to identify header row to find column indices
+            header_row = table[0]
+            if not header_row:
+                continue
+
+            # Normalise header cells
+            headers = [
+                (h or "").strip().lower().replace("\n", " ")
+                for h in header_row
+            ]
+
+            date_col = _find_col(headers, ["date", "txn date", "transaction date", "trans date", "posting date"])
+            desc_col = _find_col(headers, ["description", "narration", "particulars", "details", "transaction details"])
+            amt_col  = _find_col(headers, ["amount", "txn amount", "transaction amount", "debit", "dr amount"])
+            cr_col   = _find_col(headers, ["credit", "cr amount", "cr"])
+            dr_col   = _find_col(headers, ["debit", "dr amount", "dr"])
+            bal_col  = _find_col(headers, ["balance", "closing balance", "running balance"])
+
+            # Must at least have date + some amount column
+            if date_col is None or (amt_col is None and dr_col is None):
+                continue
+
+            for row in table[1:]:
+                if not row or len(row) <= max(c for c in [date_col, desc_col, amt_col, cr_col, dr_col, bal_col] if c is not None):
                     continue
 
-                date_str = date_match.group(1)
-                txn_date = _parse_date(date_str)
+                # Parse date
+                raw_date = (row[date_col] or "").strip()
+                date_match = _DATE_REGEX.search(raw_date)
+                if not date_match:
+                    continue
+                txn_date = _parse_date(date_match.group(1))
                 if not txn_date:
                     continue
 
-                # Remove the date string first to prevent date numbers from matching as amounts
-                line_content = stripped.replace(date_str, "").strip()
-                amounts = amount_regex.findall(line_content)
-                if not amounts:
+                # Parse description
+                description = (row[desc_col] or "").strip() if desc_col is not None else ""
+                description = re.sub(r"\s+", " ", description).strip()
+
+                # Parse amount(s)
+                amount_value = 0.0
+                txn_type = TransactionType.debit
+
+                if dr_col is not None and cr_col is not None:
+                    # Separate Dr / Cr columns
+                    dr_val = _cell_to_float(row[dr_col] if dr_col < len(row) else None)
+                    cr_val = _cell_to_float(row[cr_col] if cr_col < len(row) else None)
+                    if dr_val and dr_val > 0:
+                        amount_value = dr_val
+                        txn_type = TransactionType.debit
+                    elif cr_val and cr_val > 0:
+                        amount_value = cr_val
+                        txn_type = TransactionType.credit
+                    else:
+                        continue
+                elif amt_col is not None:
+                    val = _cell_to_float(row[amt_col] if amt_col < len(row) else None)
+                    if val is None:
+                        continue
+                    amount_value = abs(val)
+                    # Negative amounts or Cr suffix → credit
+                    raw_amt = (row[amt_col] or "").strip().lower()
+                    if val < 0 or "cr" in raw_amt:
+                        txn_type = TransactionType.credit
+                    else:
+                        txn_type = TransactionType.debit
+                else:
                     continue
 
-                if len(amounts) >= 2:
-                    balance = _clean_amount(amounts[-1])
-                    amount_value = _clean_amount(amounts[-2])
-                else:
-                    balance = None
-                    amount_value = _clean_amount(amounts[-1])
+                # Parse balance
+                balance = _cell_to_float(row[bal_col] if bal_col is not None and bal_col < len(row) else None)
 
-                # Construct clean description by removing matches of the amounts
-                description = line_content.strip()
-                for amt in amounts:
-                    description = description.replace(amt, "")
-                description = re.sub(r"\s+", " ", description).strip()
-                description = description.replace("Rs.", "").replace("Rs", "").strip()
+                # Detect type from balance delta if available
+                if balance is not None and last_balance is not None:
+                    if balance > last_balance:
+                        txn_type = TransactionType.credit
+                    elif balance < last_balance:
+                        txn_type = TransactionType.debit
 
-                txn_type = _detect_type(amounts[-2:] if len(amounts) >= 2 else amounts, last_balance, balance)
-                drcr_match = drcr_regex.search(line)
-                if drcr_match:
-                    txn_type = TransactionType.credit if drcr_match.group(1).lower() == "cr" else TransactionType.debit
-
-                transactions.append(
-                    {
-                        "id": uuid.uuid4(),
-                        "transaction_date": txn_date,
-                        "description": description or line_content,
-                        "amount": amount_value,
-                        "balance_after": balance,
-                        "transaction_type": txn_type,
-                    }
-                )
+                transactions.append({
+                    "id": uuid.uuid4(),
+                    "transaction_date": txn_date,
+                    "description": description or "Transaction",
+                    "amount": amount_value,
+                    "balance_after": balance,
+                    "transaction_type": txn_type,
+                })
                 if balance is not None:
                     last_balance = balance
 
     return transactions
+
+
+def _find_col(headers: list[str], candidates: list[str]) -> int | None:
+    """Find the first header column whose text contains one of the candidates."""
+    for i, h in enumerate(headers):
+        for c in candidates:
+            if c in h:
+                return i
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Strategy 2 — improved text-line parsing (right-anchored amounts)
+# ---------------------------------------------------------------------------
+
+def _parse_via_text(pdf) -> list[dict]:
+    transactions: list[dict] = []
+    last_balance: float | None = None
+
+    date_regex = re.compile(
+        r"(\d{2}[/-]\d{2}[/-]\d{4}|\d{2}\s?[A-Za-z]{3}\s?\d{4}|\d{2}\s?[A-Za-z]+\s?\d{4})"
+    )
+
+    # Right-anchored: capture 1–3 trailing amounts at the end of the line.
+    # This prevents numbers embedded in descriptions (like "299" in
+    # "SPOTIFY SI MUMBAI IN 299") from being treated as transaction amounts.
+    trailing_amounts_regex = re.compile(
+        r"([\d,]+(?:\.\d{1,2})?)\s+([\d,]+(?:\.\d{1,2})?)\s*$"
+    )
+    single_amount_regex = re.compile(
+        r"([\d,]+(?:\.\d{1,2})?)\s*$"
+    )
+
+    drcr_regex = re.compile(r"\b(Dr|Cr)\b", re.IGNORECASE)
+
+    for page in pdf.pages:
+        text = page.extract_text() or ""
+        for line in text.splitlines():
+            stripped = line.strip()
+            date_match = date_regex.match(stripped)
+            if not date_match:
+                continue
+
+            date_str = date_match.group(1)
+            txn_date = _parse_date(date_str)
+            if not txn_date:
+                continue
+
+            # Work with the part after the date
+            line_content = stripped[date_match.end():].strip()
+
+            # Try to find 2 trailing amounts (amount + balance)
+            amount_value = None
+            balance = None
+            description = line_content
+
+            two_match = trailing_amounts_regex.search(line_content)
+            if two_match:
+                amount_value = _clean_amount(two_match.group(1))
+                balance = _clean_amount(two_match.group(2))
+                description = line_content[:two_match.start()].strip()
+            else:
+                one_match = single_amount_regex.search(line_content)
+                if one_match:
+                    amount_value = _clean_amount(one_match.group(1))
+                    description = line_content[:one_match.start()].strip()
+
+            if amount_value is None:
+                continue
+
+            # Clean up description
+            description = re.sub(r"\s+", " ", description).strip()
+            description = description.replace("Rs.", "").replace("Rs", "").strip()
+            if not description:
+                description = "Transaction"
+
+            # Determine transaction type
+            txn_type = TransactionType.debit
+            drcr_match = drcr_regex.search(line)
+            if drcr_match:
+                txn_type = (
+                    TransactionType.credit
+                    if drcr_match.group(1).lower() == "cr"
+                    else TransactionType.debit
+                )
+            elif balance is not None and last_balance is not None:
+                txn_type = (
+                    TransactionType.credit
+                    if balance > last_balance
+                    else TransactionType.debit
+                )
+
+            transactions.append({
+                "id": uuid.uuid4(),
+                "transaction_date": txn_date,
+                "description": description,
+                "amount": amount_value,
+                "balance_after": balance,
+                "transaction_type": txn_type,
+            })
+            if balance is not None:
+                last_balance = balance
+
+    return transactions
+
 
 
 def extract_text_from_pdf(file_path: str, passwords: list[str] | None = None) -> str:
