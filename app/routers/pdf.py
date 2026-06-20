@@ -176,6 +176,19 @@ async def reparse_upload(
     await db.commit()
 
     from app.services.emi_upsert_service import _get_user_decryption_passwords
+    from sqlalchemy import delete
+
+    # --- Delete old transactions from this upload to avoid duplicates ---
+    old_txns_stmt = select(Transaction).where(
+        Transaction.user_id == upload.user_id,
+        Transaction.source == TransactionSource.pdf_upload,
+        Transaction.bank_name == upload.bank_name,
+    )
+    old_txns = (await db.execute(old_txns_stmt)).scalars().all()
+    for old_t in old_txns:
+        await db.delete(old_t)
+    await db.flush()
+
     passwords = await _get_user_decryption_passwords(db, upload.user_id)
     if password:
         passwords = [password] + [p for p in passwords if p != password]
