@@ -203,7 +203,13 @@ def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
       1. Table-based extraction (best column isolation)
       2. ICICI-specific text parser
       3. HDFC-specific text parser
-      4. Generic right-anchored text parser
+      4. SBI-specific text parser
+      5. Axis Bank-specific text parser
+      6. Kotak Mahindra-specific text parser
+      7. IndusInd Bank-specific text parser
+      8. IDFC First Bank-specific text parser
+      9. Yes Bank-specific text parser
+     10. Generic right-anchored text parser (fallback)
     """
     with _open_pdf_with_passwords(file_path, passwords) as pdf:
         # Strategy 1 — table extraction
@@ -229,7 +235,37 @@ def parse_pdf(file_path: str, passwords: list[str] | None = None) -> list[dict]:
         if txns:
             return txns
 
-        # Strategy 4 — generic
+        # Strategy 4 — SBI
+        txns = _parse_sbi(full_text)
+        if txns:
+            return txns
+
+        # Strategy 5 — Axis Bank
+        txns = _parse_axis(full_text)
+        if txns:
+            return txns
+
+        # Strategy 6 — Kotak Mahindra
+        txns = _parse_kotak(full_text)
+        if txns:
+            return txns
+
+        # Strategy 7 — IndusInd
+        txns = _parse_indusind(full_text)
+        if txns:
+            return txns
+
+        # Strategy 8 — IDFC First
+        txns = _parse_idfc(full_text)
+        if txns:
+            return txns
+
+        # Strategy 9 — Yes Bank
+        txns = _parse_yes(full_text)
+        if txns:
+            return txns
+
+        # Strategy 10 — generic fallback
         return _parse_generic(full_text)
 
 
@@ -579,8 +615,191 @@ def _parse_hdfc(full_text: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Strategy 4: Generic right-anchored text parser (unchanged from previous)
+# Strategy 4 — SBI Credit Card text parser
+#
+# SBI credit card statement format:
+#   Date         Description                  Debit     Credit    Balance
+#   19/05/2026   AMAZON INDIA PVT LTD         2,200.00            44,000.00
+#   14/05/2026   CASHBACK CREDIT                        299.00    44,299.00
+#
+# SBI also uses DD-MON-YYYY format in some versions.
 # ---------------------------------------------------------------------------
+
+def _parse_sbi(full_text: str) -> list[dict]:
+    """Parse SBI credit card statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["sbi", "state bank", "sbicard"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 5 — Axis Bank text parser
+#
+# Axis Bank credit card statement format:
+#   Date         Transaction Details              Amount (INR)  Cr/Dr
+#   19/05/2026   AMAZON INDIA                     2,200.00      Dr
+#   14/05/2026   REFUND - AMAZON                  299.00        Cr
+#
+# OR with separate debit / credit columns + balance:
+#   Date         Particulars        Chq No   Debit      Credit   Balance
+#   19/05/2026   UPI-Swiggy                  42.00               5,263.00
+# ---------------------------------------------------------------------------
+
+def _parse_axis(full_text: str) -> list[dict]:
+    """Parse Axis Bank credit card / savings statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["axis bank", "axis credit", "axisbank"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 6 — Kotak Mahindra Bank text parser
+#
+# Kotak credit card statement format:
+#   Txn Date     Description                     Amount      Cr/Dr    Balance
+#   19 May 2026  AMAZON INDIA PVT LTD            2,200.00    Dr       44,000.00
+#   14 May 2026  INTEREST REVERSAL               150.00      Cr       44,150.00
+# ---------------------------------------------------------------------------
+
+def _parse_kotak(full_text: str) -> list[dict]:
+    """Parse Kotak Mahindra Bank credit card statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["kotak", "kotak mahindra", "811"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 7 — IndusInd Bank text parser
+#
+# IndusInd credit card statement format:
+#   Date         Merchant / Transaction           Amount      Dr/Cr    Balance
+#   19/05/2026   AMAZON PAY INDIA                 1,500.00    Dr       38,500.00
+# ---------------------------------------------------------------------------
+
+def _parse_indusind(full_text: str) -> list[dict]:
+    """Parse IndusInd Bank credit card statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["indusind", "indus ind"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 8 — IDFC First Bank text parser
+#
+# IDFC First credit card / account statement format:
+#   Value Date   Description                     Debit       Credit   Balance
+#   19/05/2026   UPI/SWIGGY/REF123               85.00                12,415.00
+#   14/05/2026   SALARY CREDIT                               50,000   62,415.00
+# ---------------------------------------------------------------------------
+
+def _parse_idfc(full_text: str) -> list[dict]:
+    """Parse IDFC First Bank statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["idfc", "idfc first", "idfcfirst"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Strategy 9 — Yes Bank text parser
+#
+# Yes Bank statement format (credit card and savings):
+#   Date         Particulars                     Withdrawals  Deposits  Balance
+#   19/05/2026   UPI/AMAZON/REF456               3,500.00              46,500.00
+#   14/05/2026   NEFT INWARD - SALARY                         55,000   1,01,500.00
+# ---------------------------------------------------------------------------
+
+def _parse_yes(full_text: str) -> list[dict]:
+    """Parse Yes Bank statement text."""
+    lower = full_text.lower()
+    if not any(k in lower for k in ["yes bank", "yesbank", "yes bank ltd"]):
+        return []
+    return _parse_two_col_bank(full_text)
+
+
+# ---------------------------------------------------------------------------
+# Shared helper: two-column bank parser
+#
+# Most Indian banks (SBI, Axis, Kotak, IndusInd, IDFC, Yes) follow the same
+# general layout when rendered as text:
+#   <Date>  <Description>  [optional ref]  <Amount>  [Cr/Dr marker]  <Balance>
+#
+# This helper handles all of them identically.
+# ---------------------------------------------------------------------------
+
+_DRCR_RE = re.compile(r"\b(Dr|Cr)\b", re.IGNORECASE)
+_AMOUNTS_2 = re.compile(r"([\d,]+(?:\.\d{1,2})?)\s+([\d,]+(?:\.\d{1,2})?)\s*$")
+_AMOUNTS_1 = re.compile(r"([\d,]+(?:\.\d{1,2})?)\s*$")
+_START_DATE = re.compile(r"^(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})\s+")
+
+
+def _parse_two_col_bank(full_text: str) -> list[dict]:
+    """Shared text parser for Indian banks with Debit/Credit/Balance column layout."""
+    transactions: list[dict] = []
+    last_balance: float | None = None
+
+    for line in full_text.splitlines():
+        stripped = line.strip()
+        m = _START_DATE.match(stripped)
+        if not m:
+            continue
+
+        date_str = m.group(1)
+        txn_date = _parse_date(date_str)
+        if not txn_date:
+            continue
+
+        rest = stripped[m.end():].strip()
+
+        # Detect Dr/Cr marker
+        drcr = _DRCR_RE.search(rest)
+        is_credit: bool | None = None
+        if drcr:
+            is_credit = drcr.group(1).lower() == "cr"
+            # Remove marker so it doesn't confuse the amount regex
+            rest = rest[:drcr.start()] + rest[drcr.end():]
+
+        # Extract trailing amounts
+        m2 = _AMOUNTS_2.search(rest.strip())
+        if m2:
+            amount_value = _to_float(m2.group(1))
+            balance = _to_float(m2.group(2))
+            description = rest[:m2.start()].strip()
+
+            if is_credit is not None:
+                txn_type = TransactionType.credit if is_credit else TransactionType.debit
+            elif last_balance is not None and balance is not None:
+                txn_type = (
+                    TransactionType.credit if balance > last_balance
+                    else TransactionType.debit
+                )
+            else:
+                txn_type = TransactionType.debit
+
+            description = re.sub(r"\s+", " ", description).strip()
+            if amount_value and amount_value > 0:
+                transactions.append(_make_txn(txn_date, description, amount_value, balance, txn_type))
+            if balance is not None:
+                last_balance = balance
+        else:
+            m1 = _AMOUNTS_1.search(rest)
+            if m1:
+                amount_value = _to_float(m1.group(1))
+                description = rest[:m1.start()].strip()
+                description = re.sub(r"\s+", " ", description).strip()
+                if amount_value and amount_value > 0:
+                    txn_type = TransactionType.credit if is_credit else TransactionType.debit
+                    transactions.append(_make_txn(txn_date, description, amount_value, None, txn_type))
+
+    return transactions
+
+
+# ---------------------------------------------------------------------------
+# Strategy 10: Generic right-anchored text parser (fallback)
 
 def _parse_generic(full_text: str) -> list[dict]:
     """Generic fallback: right-anchored amount extraction."""
