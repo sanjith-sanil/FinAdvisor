@@ -130,6 +130,17 @@ function openThemeSelector() {
             </div>
             <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'warmcharcoal' ? '✓' : ''}</div>
           </div>
+          <!-- Emerald Mint -->
+          <div class="theme-option-card ${theme === 'emeraldmint' ? 'active' : ''}" data-theme="emeraldmint">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;gap:4px;">
+                <span class="theme-color-dot" style="background:#f0fdf4;"></span>
+                <span class="theme-color-dot" style="background:#059669;"></span>
+              </div>
+              <span style="font-weight:600;font-size:14px;color:var(--neutral-900);">Emerald Mint</span>
+            </div>
+            <div class="theme-check-icon" style="font-size:16px;color:var(--primary);font-weight:700;">${theme === 'emeraldmint' ? '✓' : ''}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -164,7 +175,8 @@ function openThemeSelector() {
       const readableNames = {
         default: 'Default Light',
         graphite: 'Graphite Dark',
-        warmcharcoal: 'Warm Charcoal'
+        warmcharcoal: 'Warm Charcoal',
+        emeraldmint: 'Emerald Mint'
       };
       showToast(`Theme changed to ${readableNames[selectedTheme] || selectedTheme}`, "success");
       setTimeout(closeModal, 200);

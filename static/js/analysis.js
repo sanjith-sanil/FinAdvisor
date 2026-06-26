@@ -149,6 +149,8 @@ function renderSpendingBreakdown(transactions, period) {
     colors = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b", "#3f3f46", "#18181b"];
   } else if (theme === "warmcharcoal") {
     colors = ["#f59e0b", "#fbbf24", "#d97706", "#b45309", "#f97316", "#ea580c", "#c2410c", "#7c2d12", "#3d3530", "#1c1917"];
+  } else if (theme === "emeraldmint") {
+    colors = ["#059669", "#10b981", "#34d399", "#6ee7b7", "#2563eb", "#d97706", "#dc2626", "#7c3aed", "#0891b2", "#64748b"];
   }
   const isCustomDark = ["graphite", "warmcharcoal"].includes(theme);
   const chartBorderColor = isCustomDark ? (theme === "graphite" ? "#27272a" : "#292524") : "#fff";
@@ -256,6 +258,8 @@ function renderDayOfWeekChart(debits) {
     barColor = "#3b82f6";
   } else if (theme === "warmcharcoal") {
     barColor = "#f59e0b";
+  } else if (theme === "emeraldmint") {
+    barColor = "rgba(5, 150, 105, 0.8)";
   }
 
   const tickColor = isCustomDark ? "#a1a1aa" : "#64748b";
@@ -321,6 +325,9 @@ function renderTrends(transactions) {
     } else if (theme === "warmcharcoal") {
       lineColor = "#f59e0b";
       lineBg = "rgba(245, 158, 11, 0.08)";
+    } else if (theme === "emeraldmint") {
+      lineColor = "#059669";
+      lineBg = "rgba(5, 150, 105, 0.08)";
     }
 
     const tickColor = isCustomDark ? "#a1a1aa" : "#64748b";
@@ -390,6 +397,9 @@ function renderDailyTrendChart(debitTxns) {
   if (theme === "graphite" || theme === "warmcharcoal") {
     lineColor = "#4ade80";
     lineBg = "rgba(74, 222, 128, 0.08)";
+  } else if (theme === "emeraldmint") {
+    lineColor = "#10b981";
+    lineBg = "rgba(16, 185, 129, 0.08)";
   }
 
   const tickColor = isCustomDark ? "#a1a1aa" : "#64748b";

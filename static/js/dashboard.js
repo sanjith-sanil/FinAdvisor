@@ -194,6 +194,8 @@ function renderCategoryChart(categoryData) {
     palette = ["#3b82f6", "#6366f1", "#4f46e5", "#818cf8", "#a5b4fc", "#cbd5e1", "#94a3b8", "#64748b"];
   } else if (theme === "warmcharcoal") {
     palette = ["#f59e0b", "#fbbf24", "#d97706", "#b45309", "#f97316", "#ea580c", "#c2410c", "#7c2d12"];
+  } else if (theme === "emeraldmint") {
+    palette = ["#059669", "#10b981", "#34d399", "#6ee7b7", "#2563eb", "#d97706", "#dc2626", "#0891b2"];
   }
   const isCustomDark = ["graphite", "warmcharcoal"].includes(theme);
   const chartBorderColor = isCustomDark ? (theme === "graphite" ? "#27272a" : "#292524") : "#fff";
@@ -268,6 +270,11 @@ function loadMonthlyTrendChart(summary) {
     const chartPrimary = getComputedStyle(document.body).getPropertyValue("--chart-primary").trim() || (theme === "graphite" ? "#3b82f6" : "#f59e0b");
     const chartSecondary = getComputedStyle(document.body).getPropertyValue("--chart-secondary").trim() || (theme === "graphite" ? "#6366f1" : "#fbbf24");
     barColors = [chartSecondary, chartPrimary, chartPrimary];
+  } else if (theme === "emeraldmint") {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, "#059669");
+    gradient.addColorStop(1, "#10b981");
+    barColors = gradient;
   } else {
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, "#4F46E5");
