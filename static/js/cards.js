@@ -1617,12 +1617,204 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     showToast(err.message || "Failed to load cards", "error");
   }
+
+  // Card Comparison view switching
+  document.querySelectorAll(".card-view-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".card-view-tab").forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      
+      const targetView = tab.dataset.view;
+      const cardsSection = document.getElementById("cardsViewSection");
+      const compareSection = document.getElementById("compareViewSection");
+      
+      if (targetView === "compare") {
+        if (cardsSection) cardsSection.classList.add("hidden");
+        if (compareSection) compareSection.classList.remove("hidden");
+        populateCompareSelects();
+      } else {
+        if (cardsSection) cardsSection.classList.remove("hidden");
+        if (compareSection) compareSection.classList.add("hidden");
+      }
+    });
+  });
+
+  document.getElementById("btnRunComparison")?.addEventListener("click", runCardComparison);
 });
 
 window.viewCardDetails = viewCardDetails;
 window.closeCardDetails = closeCardDetails;
 window.openEditCard = openEditCard;
 window.deactivateCard = deactivateCard;
+
+
+// --- Card Comparison Tool Helpers ---
+let compareChartInstance = null;
+
+function populateCompareSelects() {
+  const select1 = document.getElementById("compareCard1");
+  const select2 = document.getElementById("compareCard2");
+  const select3 = document.getElementById("compareCard3");
+  if (!select1 || !select2 || !select3) return;
+
+  const options = allCards.map(c => {
+    const cardName = `${c.bank_name} (${c.card_last4})`;
+    return `<option value="${c.id}">${cardName}</option>`;
+  }).join("");
+
+  select1.innerHTML = `<option value="">Select Card 1</option>${options}`;
+  select2.innerHTML = `<option value="">Select Card 2</option>${options}`;
+  select3.innerHTML = `<option value="">Select Card 3 (Optional)</option>${options}`;
+}
+
+function runCardComparison() {
+  const id1 = document.getElementById("compareCard1").value;
+  const id2 = document.getElementById("compareCard2").value;
+  const id3 = document.getElementById("compareCard3").value;
+
+  if (!id1 || !id2) {
+    showToast("Please select at least 2 cards to compare", "warning");
+    return;
+  }
+
+  const selectedCards = [id1, id2, id3]
+    .filter(Boolean)
+    .map(id => allCards.find(c => c.id === id))
+    .filter(Boolean);
+
+  if (selectedCards.length < 2) return;
+
+  // Show comparison output
+  const resultsPanel = document.getElementById("comparisonResultsPanel");
+  if (resultsPanel) resultsPanel.style.display = "block";
+
+  // Render side-by-side comparison table
+  const headerRow = document.getElementById("compareTableHeader");
+  if (headerRow) {
+    headerRow.innerHTML = `<th style="padding:10px; font-size:12px; font-weight:600;">Metric</th>` + 
+      selectedCards.map(c => `<th style="padding:10px; font-size:12px; font-weight:600; text-align:center;">${c.bank_name} (..${c.card_last4})</th>`).join("");
+  }
+
+  const metrics = [
+    { label: "Card Type", key: "card_type", format: v => String(v || "Credit").toUpperCase() },
+    { label: "Credit Limit", key: "credit_limit", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "—" },
+    { label: "Outstanding Balance", key: "current_balance", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" },
+    { label: "Utilization Ratio", key: "utilization", calc: c => {
+        const lim = floatVal(c.credit_limit);
+        const bal = floatVal(c.current_balance);
+        return lim > 0 ? `${(bal/lim*100).toFixed(1)}%` : "0%";
+      } 
+    },
+    { label: "Annual Fee", key: "annual_fee", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" },
+    { label: "Cashback Rate", key: "cashback_rate", format: v => v || "—" },
+    { label: "Lounge Access", key: "lounge_access", calc: c => c.lounge_access ? `Yes (${c.lounge_visits_per_quarter || 0}/qtr)` : "No" },
+    { label: "Monthly EMI", key: "monthly_emi_amount", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" }
+  ];
+
+  const body = document.getElementById("compareTableBody");
+  if (body) {
+    body.innerHTML = metrics.map(m => {
+      let row = `<tr style="border-bottom:1px solid var(--neutral-100);"><td style="padding:10px; font-size:12px; font-weight:600; color:var(--neutral-700);">${m.label}</td>`;
+      selectedCards.forEach(c => {
+        let val = "";
+        if (m.calc) {
+          val = m.calc(c);
+        } else {
+          val = m.format(c[m.key]);
+        }
+        row += `<td style="padding:10px; font-size:12px; text-align:center; color:var(--neutral-600);">${val}</td>`;
+      });
+      row += `</tr>`;
+      return row;
+    }).join("");
+  }
+
+  // Draw Chart.js Radar Comparison
+  const labels = ["Utilization (%)", "Interest Rate (%)", "Annual Fee (x10)", "Lounge Visits (/qtr)", "Monthly EMI (x10)"];
+  const datasets = selectedCards.map((c, index) => {
+    const lim = floatVal(c.credit_limit);
+    const bal = floatVal(c.current_balance);
+    const util = lim > 0 ? (bal / lim * 100) : 0;
+    
+    const data = [
+      Math.min(100, util),
+      floatVal(c.emi_interest_rate),
+      Math.min(100, floatVal(c.annual_fee) / 100),
+      floatVal(c.lounge_visits_per_quarter) * 10,
+      Math.min(100, floatVal(c.monthly_emi_amount) / 100)
+    ];
+
+    const borderColors = ["#4F46E5", "#10B981", "#F59E0B"];
+    const bgColors = ["rgba(79, 70, 229, 0.15)", "rgba(16, 185, 129, 0.15)", "rgba(245, 158, 11, 0.15)"];
+
+    return {
+      label: c.bank_name,
+      data: data,
+      borderColor: borderColors[index % 3],
+      backgroundColor: bgColors[index % 3],
+      borderWidth: 2,
+      pointBackgroundColor: borderColors[index % 3]
+    };
+  });
+
+  if (compareChartInstance) {
+    compareChartInstance.destroy();
+  }
+
+  const canvas = document.getElementById("compareRadarChart");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    compareChartInstance = new Chart(ctx, {
+      type: "radar",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { display: true },
+            suggestedMin: 0,
+            suggestedMax: 100,
+            ticks: { backdropColor: "transparent", color: "#94A3B8" }
+          }
+        },
+        plugins: {
+          legend: { position: "top" }
+        }
+      }
+    });
+  }
+
+  // Generate Smart Card Recommendation
+  let rec = "";
+  const lowestUtilCard = [...selectedCards].sort((a,b) => {
+    const uA = floatVal(a.current_balance) / floatVal(a.credit_limit || 1);
+    const uB = floatVal(b.current_balance) / floatVal(b.credit_limit || 1);
+    return uA - uB;
+  })[0];
+
+  const highestLimitCard = [...selectedCards].sort((a,b) => floatVal(b.credit_limit) - floatVal(a.credit_limit))[0];
+
+  rec += `🛡️ <strong>${lowestUtilCard.bank_name}</strong> has the lowest utilization ratio, making it the safest option for daily spends to boost your credit score. `;
+  if (highestLimitCard && highestLimitCard.id !== lowestUtilCard.id) {
+    rec += `💳 <strong>${highestLimitCard.bank_name}</strong> provides the highest credit limit, ideal for large planned purchases. `;
+  }
+
+  const loungeCard = selectedCards.find(c => c.lounge_access);
+  if (loungeCard) {
+    rec += `✈️ Use <strong>${loungeCard.bank_name}</strong> for airport travel benefits (${loungeCard.lounge_visits_per_quarter} visits/quarter). `;
+  }
+
+  const recText = document.getElementById("compareRecommendationText");
+  if (recText) recText.innerHTML = rec;
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function floatVal(val) {
+  if (val === null || val === undefined) return 0.0;
+  return parseFloat(val);
+}
 window.reactivateCard = reactivateCard;
 window.confirmDeleteCard = confirmDeleteCard;
 window.openAddBenefit = openAddBenefit;

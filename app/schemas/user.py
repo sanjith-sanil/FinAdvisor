@@ -36,5 +36,8 @@ class UserOut(UserBase):
     sms_configured: bool | None = None
     email_collection_configured: bool | None = None
     registration_step: int | None = None
+    last_login_date: datetime.date | None = None
+    current_streak: int | None = 0
+    longest_streak: int | None = 0
     created_at: datetime.datetime
     updated_at: datetime.datetime | None = None

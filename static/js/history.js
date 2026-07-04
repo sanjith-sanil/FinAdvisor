@@ -418,12 +418,53 @@ async function checkEmailNow() {
 
 window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) lucide.createIcons();
+
+  // Parse URL search parameters for automatic pre-filtering (e.g. from heatmap)
+  const urlParams = new URLSearchParams(window.location.search);
+  const filterDate = urlParams.get("date");
+  if (filterDate) {
+    const fromEl = document.getElementById("dateFrom");
+    const toEl = document.getElementById("dateTo");
+    if (fromEl) fromEl.value = filterDate;
+    if (toEl) toEl.value = filterDate;
+  }
+
   loadCardOptions();
   loadTransactions();
   document.getElementById("parseSms").addEventListener("click", parseSms);
-  document.getElementById("exportCsv").addEventListener("click", () => {
+  document.getElementById("exportCsv").addEventListener("click", async () => {
     const userId = getUserId();
-    window.location.href = `/api/v1/transactions/export/csv?user_id=${userId}`;
+    const token = localStorage.getItem("finadvisor_token");
+    const btn = document.getElementById("exportCsv");
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Exporting...";
+    try {
+      const response = await fetch(`/api/v1/transactions/export/csv?user_id=${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Failed to export transactions");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast("Transactions exported successfully", "success");
+    } catch (error) {
+      console.error(error);
+      showToast("Error exporting transactions", "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
   });
   document.getElementById("applyFilters").addEventListener("click", loadTransactions);
   document.getElementById("checkEmailNow")?.addEventListener("click", checkEmailNow);

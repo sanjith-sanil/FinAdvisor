@@ -316,5 +316,186 @@ document.addEventListener("DOMContentLoaded", () => {
       navLinks.classList.toggle("mobile-open");
     });
   }
+
+  // --- Notification Event Listeners Setup ---
+  loadNotifications();
+  connectNotificationStream();
+
+  const notifBellBtn = document.getElementById("notifBellBtn");
+  const notifDropdown = document.getElementById("notifDropdown");
+  const clearNotifBtn = document.getElementById("clearNotifBtn");
+
+  if (notifBellBtn && notifDropdown) {
+    notifBellBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notifDropdown.classList.toggle("hidden");
+      loadNotifications();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!notifDropdown.contains(e.target) && e.target !== notifBellBtn) {
+        notifDropdown.classList.add("hidden");
+      }
+    });
+  }
+
+  if (clearNotifBtn) {
+    clearNotifBtn.addEventListener("click", () => {
+      const list = document.getElementById("notifDropdownList");
+      if (!list) return;
+      const items = list.querySelectorAll(".notif-item");
+      const clickedIds = JSON.parse(localStorage.getItem("finadvisor_read_notifs") || "[]");
+      items.forEach(item => {
+        const id = item.dataset.id;
+        if (!clickedIds.includes(id)) {
+          clickedIds.push(id);
+        }
+      });
+      localStorage.setItem("finadvisor_read_notifs", JSON.stringify(clickedIds));
+      loadNotifications();
+    });
+  }
 });
+
+// --- Live Notification UI and EventStream (SSE) integration ---
+let notifEventSource = null;
+
+async function loadNotifications() {
+  const userId = getUserId();
+  const token = localStorage.getItem("finadvisor_token");
+  if (!userId || !token) return;
+
+  try {
+    const response = await fetch(`/api/v1/notifications/${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    if (!response.ok) return;
+    const notifications = await response.json();
+    renderNotifications(notifications);
+  } catch (error) {
+    console.error("Error loading notifications", error);
+  }
+}
+
+function renderNotifications(notifications) {
+  const list = document.getElementById("notifDropdownList");
+  const badge = document.getElementById("notifBadge");
+  if (!list) return;
+
+  const clickedIds = JSON.parse(localStorage.getItem("finadvisor_read_notifs") || "[]");
+  const unreadList = notifications.filter(n => n.unread && !clickedIds.includes(n.id));
+  const unreadCount = unreadList.length;
+
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  if (notifications.length === 0) {
+    list.innerHTML = `<div class="notif-empty-state">No new notifications</div>`;
+    return;
+  }
+
+  const icons = {
+    reminder: "calendar",
+    statement: "file-text",
+    transaction: "credit-card"
+  };
+
+  list.innerHTML = notifications.map(n => {
+    const isUnread = n.unread && !clickedIds.includes(n.id);
+    const icon = icons[n.type] || "bell";
+    const timeStr = formatTimeAgo(n.timestamp);
+    return `
+      <div class="notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id}">
+        <div class="notif-item-icon">
+          <i data-lucide="${icon}"></i>
+        </div>
+        <div class="notif-item-content">
+          <div class="notif-item-title">${n.title}</div>
+          <div class="notif-item-meta">${n.meta}</div>
+          <div class="notif-item-time">${timeStr}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if (window.lucide) lucide.createIcons();
+
+  list.querySelectorAll(".notif-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const id = item.dataset.id;
+      if (!clickedIds.includes(id)) {
+        clickedIds.push(id);
+        localStorage.setItem("finadvisor_read_notifs", JSON.stringify(clickedIds));
+      }
+      item.classList.remove("unread");
+      const newUnreadCount = notifications.filter(n => n.unread && !clickedIds.includes(n.id)).length;
+      if (badge) {
+        if (newUnreadCount > 0) {
+          badge.textContent = newUnreadCount;
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    });
+  });
+}
+
+function connectNotificationStream() {
+  const userId = getUserId();
+  const token = localStorage.getItem("finadvisor_token");
+  if (!userId || !token) return;
+
+  if (notifEventSource) {
+    notifEventSource.close();
+  }
+
+  notifEventSource = new EventSource(`/api/v1/notifications/stream/${userId}?token=${encodeURIComponent(token)}`);
+
+  notifEventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      playNotificationSound();
+      showToast(`${data.title}: ${data.meta}`, "info");
+      loadNotifications();
+      window.dispatchEvent(new CustomEvent("realtimeNotification", { detail: data }));
+    } catch (e) {
+      console.error("Error parsing live notification event", e);
+    }
+  };
+
+  notifEventSource.onerror = (err) => {
+    console.error("SSE stream error", err);
+  };
+}
+
+function playNotificationSound() {
+  try {
+    const context = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = context.createOscillator();
+    const gain = context.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, context.currentTime); // D5
+    osc.frequency.setValueAtTime(880, context.currentTime + 0.1); // A5
+    
+    gain.gain.setValueAtTime(0.08, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.35);
+    
+    osc.connect(gain);
+    gain.connect(context.destination);
+    
+    osc.start();
+    osc.stop(context.currentTime + 0.35);
+  } catch (e) {
+    // Audio Context blocked by user gesture
+  }
+}
 

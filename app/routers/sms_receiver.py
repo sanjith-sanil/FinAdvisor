@@ -183,6 +183,25 @@ async def receive_bulk(
                         operation="insert"
                     )
                 raw.parsed_transaction_id = txn.id
+                
+                # Real-time Notification Publish
+                try:
+                    import json
+                    from app.services.notification_service import notification_hub
+                    ts = txn.transaction_date or txn.created_at or datetime.datetime.now()
+                    await notification_hub.publish(
+                        str(txn.user_id),
+                        json.dumps({
+                            "id": f"txn-{txn.id}",
+                            "title": "Transaction alert",
+                            "meta": f"{txn.bank_name or 'Bank'} • ₹{txn.amount} at {txn.merchant_name or 'Merchant'}",
+                            "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+                            "type": "transaction",
+                            "unread": True
+                        })
+                    )
+                except Exception:
+                    pass
         results.append({"user_id": item.user_id, "parsed": parsed_ok})
         user.sms_configured = True
 

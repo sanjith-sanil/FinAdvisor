@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     allTransactions = Array.isArray(txnData) ? txnData : txnData.items || txnData.transactions || [];
 
     applyPeriod(activePeriod);
+    loadSpendingHeatmap();
   } catch (err) {
     console.error("Analysis error:", err);
   }
@@ -446,3 +447,95 @@ window.addEventListener("themeChanged", () => {
     setTimeout(() => applyPeriod(activePeriod), 50);
   }
 });
+
+
+async function loadSpendingHeatmap() {
+  const userId = localStorage.getItem("finadvisor_user_id") || "00000000-0000-0000-0000-000000000001";
+  const grid = document.getElementById("heatmapGrid");
+  if (!grid) return;
+
+  try {
+    const token = localStorage.getItem("finadvisor_token");
+    const response = await fetch(`/api/v1/transactions/daily-spending?user_id=${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    if (!response.ok) return;
+    const dailyData = await response.json();
+    
+    // Map dates to amounts
+    const spendMap = {};
+    dailyData.forEach(d => {
+      spendMap[d.date] = d.amount;
+    });
+
+    // Build past 365 days
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - 365);
+
+    // Padding for day of week alignment (0 = Sunday, 1 = Monday, etc.)
+    const startDay = startDate.getDay();
+    let html = "";
+    for (let i = 0; i < startDay; i++) {
+      html += `<div style="width:12px;height:12px;opacity:0;"></div>`;
+    }
+
+    // Generate cell for each day
+    const currentDate = new Date(startDate);
+    while (currentDate <= today) {
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+      const day = String(currentDate.getDate()).padStart(2, "0");
+      const dateStr = `${year}-${month}-${day}`;
+      const amount = spendMap[dateStr] || 0;
+
+      // Color intensity mapping
+      let color = "var(--neutral-100, #e2e8f0)";
+      const isDark = ["graphite", "warmcharcoal"].includes(localStorage.getItem("finadvisor_theme") || "default");
+      if (isDark) {
+        color = "rgba(255, 255, 255, 0.05)";
+      }
+      
+      if (amount > 0) {
+        if (amount <= 500) color = "#dcfce7";
+        else if (amount <= 2000) color = "#86efac";
+        else if (amount <= 5000) color = "#22c55e";
+        else color = "#15803d";
+      }
+
+      const formattedDate = currentDate.toLocaleDateString("en-IN", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+
+      html += `
+        <div class="heatmap-cell" 
+             style="width:12px;height:12px;background:${color};border-radius:2px;cursor:pointer;transition:transform 0.1s;"
+             title="${formattedDate}: Rs${amount.toLocaleString('en-IN')}"
+             data-date="${dateStr}"
+             onmouseover="this.style.transform='scale(1.35)';this.style.zIndex='10';"
+             onmouseout="this.style.transform='scale(1)';"
+        ></div>
+      `;
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    grid.innerHTML = html;
+
+    // Heatmap cell click to filter local chart/data or direct to History page
+    grid.querySelectorAll(".heatmap-cell").forEach(cell => {
+      cell.addEventListener("click", () => {
+        const clickedDate = cell.dataset.date;
+        window.location.href = `/history?date=${clickedDate}`;
+      });
+    });
+
+  } catch (error) {
+    console.error("Failed to load spending heatmap:", error);
+  }
+}

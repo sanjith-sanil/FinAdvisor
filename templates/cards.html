@@ -3,26 +3,91 @@
 {% block content %}
 <section class="container cards-page">
   <div class="cards-header-row">
-    <div class="section-title"><i data-lucide="credit-card"></i>My Cards</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="section-title"><i data-lucide="credit-card"></i>My Cards</div>
+      <div class="cards-tabs" style="display:flex;gap:8px;">
+        <button class="tab-btn card-view-tab active" data-view="cards" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px;">Manage Cards</button>
+        <button class="tab-btn card-view-tab" data-view="compare" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px;">Compare Cards 📊</button>
+      </div>
+    </div>
     <button class="btn btn-primary" id="openCardModal" type="button">+ Add New Card</button>
   </div>
+  <div id="cardsViewSection">
+    <div class="glass-card cards-filter-bar">
+      <button class="btn btn-pill active" data-filter="all" type="button">All</button>
+      <button class="btn btn-pill" data-filter="credit" type="button">Credit</button>
+      <button class="btn btn-pill" data-filter="debit" type="button">Debit</button>
+      <button class="btn btn-pill" data-filter="active" type="button">Active</button>
+      <button class="btn btn-pill" data-filter="inactive" type="button">Inactive</button>
+    </div>
 
-  <div class="glass-card cards-filter-bar">
-    <button class="btn btn-pill active" data-filter="all" type="button">All</button>
-    <button class="btn btn-pill" data-filter="credit" type="button">Credit</button>
-    <button class="btn btn-pill" data-filter="debit" type="button">Debit</button>
-    <button class="btn btn-pill" data-filter="active" type="button">Active</button>
-    <button class="btn btn-pill" data-filter="inactive" type="button">Inactive</button>
+    <div class="glass-card empty-state" id="cardsEmpty">
+      <i data-lucide="credit-card" class="empty-icon"></i>
+      <div class="empty-title">No cards added yet</div>
+      <div class="empty-subtitle">Add your first card to start tracking utilization, EMIs, and rewards.</div>
+      <button class="btn btn-primary" id="addFirstCard" type="button">+ Add Your First Card</button>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid"></div>
   </div>
 
-  <div class="glass-card empty-state" id="cardsEmpty">
-    <i data-lucide="credit-card" class="empty-icon"></i>
-    <div class="empty-title">No cards added yet</div>
-    <div class="empty-subtitle">Add your first card to start tracking utilization, EMIs, and rewards.</div>
-    <button class="btn btn-primary" id="addFirstCard" type="button">+ Add Your First Card</button>
+  <div id="compareViewSection" class="hidden" style="margin-top: 16px;">
+    <div class="grid grid-2" style="gap: 16px;">
+      <div class="glass-card">
+        <div class="section-title"><i data-lucide="shuffle"></i>Compare Cards Side-by-Side</div>
+        <p class="text-sm text-muted mb-12" style="margin-bottom: 12px; font-size:12px;">Select up to 3 cards to compare benefits, lounge access, rewards, interest rates, and fees.</p>
+        <div class="compare-selectors" style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
+          <div>
+            <label style="font-size:11px; font-weight:600; display:block; margin-bottom:4px;">Card 1</label>
+            <select id="compareCard1" class="compare-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--neutral-200); background:white; color:var(--neutral-900);"><option value="">Select Card</option></select>
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; display:block; margin-bottom:4px;">Card 2</label>
+            <select id="compareCard2" class="compare-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--neutral-200); background:white; color:var(--neutral-900);"><option value="">Select Card</option></select>
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:600; display:block; margin-bottom:4px;">Card 3 (Optional)</label>
+            <select id="compareCard3" class="compare-select" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--neutral-200); background:white; color:var(--neutral-900);"><option value="">Select Card</option></select>
+          </div>
+          <button class="btn btn-primary" id="btnRunComparison" type="button" style="margin-top:8px; width: 100%;">Compare Now</button>
+        </div>
+      </div>
+      <div class="glass-card" style="display:flex; flex-direction:column; min-height:300px;">
+        <div class="section-title"><i data-lucide="radar"></i>Radar Comparison</div>
+        <div style="flex:1; position:relative; min-height:220px; display:flex; align-items:center; justify-content:center;">
+          <canvas id="compareRadarChart" style="max-height: 220px;"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div class="glass-card mt-16" id="comparisonResultsPanel" style="display:none; margin-top:16px;">
+      <div class="section-title"><i data-lucide="list"></i>Side-by-Side Comparison</div>
+      <div style="overflow-x:auto;">
+        <table class="transactions-table" style="width:100%; text-align:left; border-collapse:collapse; margin-top: 12px;">
+          <thead>
+            <tr id="compareTableHeader">
+              <th style="padding:10px; font-size: 12px; font-weight: 600;">Metric</th>
+              <!-- Card names will be added here -->
+            </tr>
+          </thead>
+          <tbody id="compareTableBody">
+            <!-- Metrics rows will be generated dynamically -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Smart Recommendation banner -->
+      <div id="compareRecommendation" class="smart-rec-banner glass-card" style="margin-top:20px; box-shadow:none; border:1px solid var(--primary-light); background:var(--primary-light);">
+        <div class="smart-rec-left">
+          <div class="smart-rec-icon" style="background:var(--primary); color:white;"><i data-lucide="zap"></i></div>
+          <div>
+            <div class="smart-rec-title" style="color:var(--neutral-900);">Best Card Recommendation</div>
+            <div class="smart-rec-sub" id="compareRecommendationText" style="color:var(--neutral-600);">Select cards to see recommendations.</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="cards-grid" id="cardsGrid"></div>
 </section>
 
 <div class="card-details-panel-wrapper">

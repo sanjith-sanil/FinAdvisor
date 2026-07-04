@@ -106,14 +106,29 @@ async def get_notifications(
 @router.get("/stream/{user_id}")
 async def stream_notifications(
     user_id: str,
-    current_user: User = Depends(get_current_user),
+    token: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     try:
         req_user_id = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid user_id")
-    if req_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Manual JWT authentication for EventSource
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication token required")
+    
+    from app.core.security import ALGORITHM
+    from jose import JWTError, jwt
+    from app.core.config import settings
+
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+        sub = payload.get("sub")
+        if not sub or uuid.UUID(sub) != req_user_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    except (JWTError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     async def event_stream():
         while True:

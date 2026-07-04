@@ -451,6 +451,22 @@ async function loadDashboardData() {
 
     const summary = await summaryRes.json();
 
+    // Fetch user profile for login streak
+    try {
+      const userRes = await fetch(`/api/v1/users/${userId}`);
+      if (userRes.ok) {
+        const user = await userRes.json();
+        const streakBadge = document.getElementById("dashboardStreakBadge");
+        const streakCount = document.getElementById("streakCount");
+        if (streakBadge && streakCount && user.current_streak > 0) {
+          streakCount.textContent = user.current_streak;
+          streakBadge.style.display = "inline-flex";
+        }
+      }
+    } catch (e) {
+      console.error("Error loading user streak", e);
+    }
+
     // Populate the dropdown first as it is critical and fast
     try {
       populateManualCardDropdown(summary);
@@ -468,6 +484,14 @@ async function loadDashboardData() {
       renderHealthScore(summary.financial_health_score || 50, summary.score_label || "Fair", summary.score_color || "#F59E0B");
     } catch (e) {
       console.error("Error rendering health score:", e);
+    }
+
+    // Eval Onboarding Checklist
+    try {
+      await checkOnboardingStatus(summary);
+      await setupOnboardingListeners(summary);
+    } catch (e) {
+      console.error("Error loading onboarding widget:", e);
     }
 
     try {
@@ -640,3 +664,131 @@ window.addEventListener("themeChanged", () => {
     setTimeout(() => loadDashboardData(), 50);
   }
 });
+
+
+// --- Onboarding Checklist Flow Helpers ---
+async function checkOnboardingStatus(summary) {
+  const userId = localStorage.getItem("finadvisor_user_id") || "00000000-0000-0000-0000-000000000001";
+  const token = localStorage.getItem("finadvisor_token");
+  const widget = document.getElementById("onboardingWidget");
+  if (!widget || !userId || !token) return;
+
+  try {
+    const userRes = await fetch(`/api/v1/users/${userId}`);
+    if (!userRes.ok) return;
+    const user = await userRes.json();
+
+    const budgetRes = await fetch(`/api/v1/users/${userId}/budget`);
+    let budgetLimit = 0;
+    if (budgetRes.ok) {
+      const budgetData = await budgetRes.json();
+      budgetLimit = budgetData.monthly_limit || 0;
+      const budgetInput = document.getElementById("obBudgetInput");
+      if (budgetInput && budgetLimit > 0 && !budgetInput.value) {
+        budgetInput.value = budgetLimit;
+      }
+    }
+
+    const step1Done = summary.cards_count > 0;
+    const step2Done = user.email_collection_configured === true;
+    const step3Done = budgetLimit > 0;
+
+    let completedSteps = 0;
+    if (step1Done) completedSteps++;
+    if (step2Done) completedSteps++;
+    if (step3Done) completedSteps++;
+
+    updateStepCardStyle("obStep1", step1Done, "credit-card");
+    updateStepCardStyle("obStep2", step2Done, "mail");
+    updateStepCardStyle("obStep3", step3Done, "calculator");
+
+    const percent = Math.round((completedSteps / 3) * 100);
+    const ring = document.getElementById("onboardingProgressRing");
+    const percentText = document.getElementById("onboardingProgressPercent");
+    
+    if (percentText) percentText.textContent = `${percent}%`;
+    if (ring) {
+      const circumference = 2 * Math.PI * 15.915; // ~100
+      const offset = circumference - (completedSteps / 3) * circumference;
+      ring.style.strokeDashoffset = offset;
+    }
+
+    if (completedSteps === 3) {
+      widget.classList.add("hidden");
+    } else {
+      widget.classList.remove("hidden");
+    }
+
+    if (window.lucide) lucide.createIcons();
+  } catch (e) {
+    console.error("Error evaluating onboarding checklist", e);
+  }
+}
+
+function updateStepCardStyle(cardId, isDone, originalIcon) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  const iconWrap = card.querySelector(".ob-step-icon");
+  
+  if (isDone) {
+    card.style.borderColor = "var(--primary)";
+    card.style.background = "var(--primary-light)";
+    if (iconWrap) {
+      iconWrap.style.background = "var(--primary)";
+      iconWrap.style.color = "white";
+      iconWrap.innerHTML = `<i data-lucide="check" style="width:14px;height:14px;"></i>`;
+    }
+    const link = card.querySelector("a");
+    if (link) {
+      link.style.pointerEvents = "none";
+      link.style.opacity = "0.5";
+      link.textContent = "Done ✓";
+    }
+  } else {
+    card.style.borderColor = "var(--neutral-100)";
+    card.style.background = "transparent";
+    if (iconWrap) {
+      iconWrap.style.background = "var(--neutral-100)";
+      iconWrap.style.color = "var(--neutral-500)";
+      iconWrap.innerHTML = `<i data-lucide="${originalIcon}" style="width:14px;height:14px;"></i>`;
+    }
+  }
+}
+
+let onboardingListenerBound = false;
+async function setupOnboardingListeners(summary) {
+  if (onboardingListenerBound) return;
+  const btn = document.getElementById("obSetBudgetBtn");
+  if (!btn) return;
+
+  onboardingListenerBound = true;
+  btn.addEventListener("click", async () => {
+    const userId = localStorage.getItem("finadvisor_user_id") || "00000000-0000-0000-0000-000000000001";
+    const token = localStorage.getItem("finadvisor_token");
+    const limit = Number(document.getElementById("obBudgetInput").value) || 0;
+
+    if (limit <= 0) {
+      showToast("Please enter a valid budget limit", "warning");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/users/${userId}/budget`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ monthly_limit: limit })
+      });
+      if (res.ok) {
+        showToast("Budget set successfully", "success");
+        await checkOnboardingStatus(summary);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to save budget", "error");
+    }
+  });
+}

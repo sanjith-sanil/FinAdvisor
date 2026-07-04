@@ -125,6 +125,27 @@ async def create_transaction(
         )
     await db.commit()
     await db.refresh(txn)
+
+    # Real-time Notification Publish
+    try:
+        import json
+        from app.services.notification_service import notification_hub
+        ts = txn.transaction_date or txn.created_at or datetime.datetime.now()
+        await notification_hub.publish(
+            str(txn.user_id),
+            json.dumps({
+                "id": f"txn-{txn.id}",
+                "title": "Transaction alert",
+                "meta": f"{txn.bank_name or 'Manual'} • ₹{txn.amount} at {txn.merchant_name or txn.description or 'Transaction'}",
+                "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+                "type": "transaction",
+                "unread": True
+            })
+        )
+    except Exception as e:
+        # Don't break transaction creation if notification fails
+        pass
+
     return txn
 
 
@@ -280,3 +301,45 @@ async def export_transactions_csv(
     response = StreamingResponse(iter([buffer.getvalue()]), media_type="text/csv")
     response.headers["Content-Disposition"] = "attachment; filename=transactions.csv"
     return response
+
+
+@router.get("/daily-spending")
+async def get_daily_spending(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict]:
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    # Query sum of debit transactions grouped by date for the last 365 days
+    from sqlalchemy import func
+    from app.models.transaction import scope_active_transactions, TransactionType
+    
+    today = datetime.date.today()
+    one_year_ago = today - datetime.timedelta(days=365)
+    
+    stmt = (
+        select(
+            func.date(Transaction.transaction_date).label("date"),
+            func.coalesce(func.sum(Transaction.amount), 0).label("amount")
+        )
+        .where(
+            Transaction.user_id == user_id,
+            Transaction.transaction_type == TransactionType.debit,
+            Transaction.transaction_date >= one_year_ago
+        )
+    )
+    stmt = scope_active_transactions(stmt).group_by("date").order_by("date")
+    rows = (await db.execute(stmt)).all()
+    
+    results = []
+    for r in rows:
+        if r.date:
+            date_str = r.date.isoformat() if hasattr(r.date, "isoformat") else str(r.date)
+            results.append({
+                "date": date_str,
+                "amount": float(r.amount)
+            })
+            
+    return results

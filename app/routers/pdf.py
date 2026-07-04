@@ -80,6 +80,24 @@ async def upload_pdf(
     except Exception as e:
         upload.status = PdfStatus.failed
         await db.commit()
+        # Publish parsing failed notification
+        try:
+            import json
+            import datetime
+            from app.services.notification_service import notification_hub
+            await notification_hub.publish(
+                str(user_id),
+                json.dumps({
+                    "id": f"pdf-failed-{upload.id}",
+                    "title": "Parsing failed",
+                    "meta": f"Failed to parse {upload.filename or 'statement'}: {str(e)}",
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "type": "statement",
+                    "unread": True
+                })
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=400,
             detail=f"PDF parsing/decryption failed: {str(e)}"
@@ -134,6 +152,26 @@ async def upload_pdf(
     upload.total_transactions_parsed = len(transactions)
     await db.commit()
     await db.refresh(upload)
+
+    # Publish parsing success notification
+    try:
+        import json
+        import datetime
+        from app.services.notification_service import notification_hub
+        await notification_hub.publish(
+            str(user_id),
+            json.dumps({
+                "id": f"pdf-success-{upload.id}",
+                "title": "Statement parsed",
+                "meta": f"{upload.bank_name or 'Bank'} • {upload.total_transactions_parsed} transactions imported",
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "type": "statement",
+                "unread": True
+            })
+        )
+    except Exception:
+        pass
+
     return upload
 
 
@@ -198,6 +236,24 @@ async def reparse_upload(
     except Exception as e:
         upload.status = PdfStatus.failed
         await db.commit()
+        # Publish parsing failed notification
+        try:
+            import json
+            import datetime
+            from app.services.notification_service import notification_hub
+            await notification_hub.publish(
+                str(upload.user_id),
+                json.dumps({
+                    "id": f"pdf-failed-{upload.id}",
+                    "title": "Parsing failed",
+                    "meta": f"Failed to parse {upload.filename or 'statement'}: {str(e)}",
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "type": "statement",
+                    "unread": True
+                })
+            )
+        except Exception:
+            pass
         raise HTTPException(
             status_code=400,
             detail=f"PDF parsing/decryption failed: {str(e)}"
@@ -250,4 +306,24 @@ async def reparse_upload(
     upload.total_transactions_parsed = len(transactions)
     await db.commit()
     await db.refresh(upload)
+
+    # Publish parsing success notification
+    try:
+        import json
+        import datetime
+        from app.services.notification_service import notification_hub
+        await notification_hub.publish(
+            str(upload.user_id),
+            json.dumps({
+                "id": f"pdf-success-{upload.id}",
+                "title": "Statement parsed",
+                "meta": f"{upload.bank_name or 'Bank'} • {upload.total_transactions_parsed} transactions imported",
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "type": "statement",
+                "unread": True
+            })
+        )
+    except Exception:
+        pass
+
     return upload

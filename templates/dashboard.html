@@ -3,7 +3,13 @@
 {% block content %}
 <section class="container">
   <div class="dashboard-top-row">
-    <div class="section-title"><i data-lucide="layout-dashboard"></i>Dashboard</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="section-title"><i data-lucide="layout-dashboard"></i>Dashboard</div>
+      <div class="streak-badge" id="dashboardStreakBadge" title="Your Daily Login Streak!" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg, #F59E0B, #EF4444);color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(239,68,68,0.25);animation: pulse 2s infinite;">
+        <i data-lucide="flame" style="width:14px;height:14px;fill:white;"></i>
+        <span id="streakCount">0</span> Days
+      </div>
+    </div>
     <div class="dashboard-tabs">
       <button class="tab-btn dashboard-tab active" data-tab="auto">Auto Calculations</button>
       <button class="tab-btn dashboard-tab" data-tab="manual">Manual Input</button>
@@ -11,6 +17,57 @@
   </div>
   <div class="glass-card p-12 mt-12">
     This app provides financial information only. Not a payment processor. Not SEBI registered.
+  </div>
+
+  <!-- Onboarding Checklist Widget -->
+  <div class="glass-card mt-16 hidden" id="onboardingWidget" style="margin-top: 16px; padding: 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div>
+        <h3 class="section-title" style="margin-bottom:4px;"><i data-lucide="compass"></i>Get Started with FinAdvisor</h3>
+        <p class="text-sm text-muted" style="font-size:11px;">Complete these 3 steps to set up your financial tracking dashboard.</p>
+      </div>
+      <!-- Progress Ring -->
+      <div style="position:relative; width:54px; height:54px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="54" height="54" viewBox="0 0 36 36" style="transform: rotate(-90deg);">
+          <circle cx="18" cy="18" r="15.915" fill="none" stroke="var(--neutral-100, #f1f5f9)" stroke-width="3"></circle>
+          <circle id="onboardingProgressRing" cx="18" cy="18" r="15.915" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" style="transition: stroke-dashoffset 0.35s;"></circle>
+        </svg>
+        <span id="onboardingProgressPercent" style="position:absolute; font-size:10px; font-weight:700; color:var(--neutral-900);">0%</span>
+      </div>
+    </div>
+    
+    <div class="onboarding-steps" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+      <!-- Step 1 -->
+      <div class="glass-card onboarding-step-card" id="obStep1" style="padding:12px; display:flex; gap:12px; align-items:flex-start; border: 1px solid var(--neutral-100);">
+        <div class="ob-step-icon" style="width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--neutral-100); color:var(--neutral-500);"><i data-lucide="credit-card" style="width:14px;height:14px;"></i></div>
+        <div style="flex:1;">
+          <div style="font-size:12px; font-weight:700; color:var(--neutral-900);">1. Add Credit Card</div>
+          <p style="font-size:10px; color:var(--neutral-500); margin:2px 0 6px 0;">Add your first credit card.</p>
+          <a href="/cards" class="btn btn-primary" style="padding:4px 8px; font-size:10px; display:inline-block; width:max-content; text-decoration:none;">Add Card</a>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="glass-card onboarding-step-card" id="obStep2" style="padding:12px; display:flex; gap:12px; align-items:flex-start; border: 1px solid var(--neutral-100);">
+        <div class="ob-step-icon" style="width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--neutral-100); color:var(--neutral-500);"><i data-lucide="mail" style="width:14px;height:14px;"></i></div>
+        <div style="flex:1;">
+          <div style="font-size:12px; font-weight:700; color:var(--neutral-900);">2. Connect Email</div>
+          <p style="font-size:10px; color:var(--neutral-500); margin:2px 0 6px 0;">Link Gmail for auto statement import.</p>
+          <a href="/profile#auto-collection" class="btn btn-primary" style="padding:4px 8px; font-size:10px; display:inline-block; width:max-content; text-decoration:none;">Connect</a>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="glass-card onboarding-step-card" id="obStep3" style="padding:12px; display:flex; gap:12px; align-items:flex-start; border: 1px solid var(--neutral-100);">
+        <div class="ob-step-icon" style="width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--neutral-100); color:var(--neutral-500);"><i data-lucide="calculator" style="width:14px;height:14px;"></i></div>
+        <div style="flex:1;">
+          <div style="font-size:12px; font-weight:700; color:var(--neutral-900);">3. Set Monthly Budget</div>
+          <p style="font-size:10px; color:var(--neutral-500); margin:2px 0 6px 0;">Define a monthly spending budget.</p>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <input type="number" id="obBudgetInput" placeholder="Limit (Rs)" style="padding:4px; font-size:10px; width:80px; border-radius:4px; border:1px solid var(--neutral-200); background:white; color:var(--neutral-900);" />
+            <button id="obSetBudgetBtn" class="btn btn-primary" style="padding:4px 8px; font-size:10px; border-radius:4px;">Set</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="autoTab">

@@ -91,6 +91,7 @@
         <div class="profile-tab active" data-tab="personal">Personal Details</div>
         <div class="profile-tab" data-tab="security">Security & Privacy</div>
         <div class="profile-tab" data-tab="auto-collection">Auto-Collection</div>
+        <div class="profile-tab" data-tab="badges">Trophy Case 🏆</div>
       </div>
 
       <div class="glass-card profile-panel">
@@ -351,6 +352,16 @@
             </div>
             <div id="bankDomainGroups" class="bank-domain-groups"></div>
             <div class="bank-domain-stats" id="bankDomainStats">0 verified domains | Last updated: - | Protecting against spam</div>
+          </div>
+        </div>
+
+        <div id="badgesTab" class="hidden">
+          <div style="margin-bottom:20px;">
+            <div class="profile-hero-title" style="font-size:18px;margin-bottom:4px;">Trophy Case</div>
+            <div class="profile-hero-sub" style="font-size:12px;">Earn achievement badges by meeting financial best practices and milestones.</div>
+          </div>
+          <div class="badges-grid" id="badgesGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:16px;">
+            <!-- Badges will be loaded dynamically -->
           </div>
         </div>
       </div>

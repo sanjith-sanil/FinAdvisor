@@ -2,6 +2,7 @@ const tabs = {
 	personal: document.getElementById("personalTab"),
 	security: document.getElementById("securityTab"),
 	"auto-collection": document.getElementById("autoCollectionTab"),
+	badges: document.getElementById("badgesTab"),
 };
 
 // ── Initialise visible tab on every page load ─────────────────────────────
@@ -14,6 +15,10 @@ Object.entries(tabs).forEach(([key, el]) => {
 	if (el) el.style.display = key === initialTab ? "block" : "none";
 });
 
+if (initialTab === "badges") {
+	loadUserBadges();
+}
+
 document.querySelectorAll(".profile-tab").forEach((tab) => {
 	tab.addEventListener("click", () => {
 		const target = tab.dataset.tab;
@@ -22,6 +27,9 @@ document.querySelectorAll(".profile-tab").forEach((tab) => {
 		Object.entries(tabs).forEach(([key, el]) => {
 			if (el) el.style.display = key === target ? "block" : "none";
 		});
+		if (target === "badges") {
+			loadUserBadges();
+		}
 		if (window.lucide) lucide.createIcons();
 	});
 });
@@ -33,6 +41,9 @@ if (hashTab && tabs[hashTab]) {
   Object.entries(tabs).forEach(([key, el]) => {
     if (el) el.style.display = key === hashTab ? "block" : "none";
   });
+  if (hashTab === "badges") {
+    loadUserBadges();
+  }
 }
 
 document.querySelectorAll(".toggle").forEach((toggle) => {
@@ -805,3 +816,57 @@ if (document.getElementById("autoCollectionTab")) {
 bankDomainSearch?.addEventListener("input", () => {
 	renderBankDomains(bankDomainSearch.value);
 });
+
+
+async function loadUserBadges() {
+  const userId = getUserId();
+  const token = localStorage.getItem("finadvisor_token");
+  const grid = document.getElementById("badgesGrid");
+  if (!grid || !userId || !token) return;
+
+  grid.innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--neutral-500);">
+      <i data-lucide="loader-2" class="spin" style="width:24px;height:24px;margin-bottom:8px;display:inline-block;"></i>
+      <div>Loading achievements...</div>
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    const response = await fetch(`/api/v1/users/${userId}/badges`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--danger);">Failed to load achievements</div>`;
+      return;
+    }
+    const badges = await response.json();
+    
+    grid.innerHTML = badges.map(b => {
+      const icon = b.icon || "award";
+      const borderStyle = b.unlocked ? "border:2px solid var(--primary);" : "opacity:0.6;filter:grayscale(80%);border:1px solid var(--neutral-200);";
+      const bg = b.unlocked ? "background:var(--primary-light);" : "background:var(--neutral-100);";
+      const iconColor = b.unlocked ? "color:var(--primary);" : "color:var(--neutral-400);";
+      
+      return `
+        <div class="glass-card badge-card" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px;border-radius:12px;${borderStyle}transition:all 0.2s ease;">
+          <div class="badge-icon-wrap" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:12px;${bg}${iconColor}">
+            <i data-lucide="${icon}" style="width:22px;height:22px;"></i>
+          </div>
+          <div class="badge-title" style="font-size:13px;font-weight:700;color:var(--neutral-900);margin-bottom:4px;">${b.title}</div>
+          <div class="badge-desc" style="font-size:10px;color:var(--neutral-500);line-height:1.2;margin-bottom:8px;height:24px;overflow:hidden;">${b.description}</div>
+          <div class="badge-status-pill" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:${b.unlocked ? '#D1FAE5' : '#F3F4F6'};color:${b.unlocked ? '#065F46' : '#6B7280'};">
+            ${b.unlocked ? "Unlocked" : b.progress}
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+    if (window.lucide) lucide.createIcons();
+  } catch (error) {
+    console.error("Error fetching badges", error);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--danger);">Error loading achievements</div>`;
+  }
+}

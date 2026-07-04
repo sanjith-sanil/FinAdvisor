@@ -27,6 +27,21 @@
         <button class="btn btn-secondary hidden" id="mobileMenuButton" aria-label="Open menu" title="Open menu">
           <i data-lucide="menu"></i>
         </button>
+        <div class="notification-wrapper" id="notifWrapper">
+          <button class="notif-bell-btn" id="notifBellBtn" aria-label="Notifications" title="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="notif-badge hidden" id="notifBadge">0</span>
+          </button>
+          <div class="notif-dropdown hidden" id="notifDropdown">
+            <div class="notif-dropdown-header">
+              <h4>Notifications</h4>
+              <button id="clearNotifBtn" class="btn-clear-notif">Clear All</button>
+            </div>
+            <div class="notif-dropdown-list" id="notifDropdownList">
+              <div class="notif-empty-state">No new notifications</div>
+            </div>
+          </div>
+        </div>
         <div class="customer-pill" id="customerId">CUST00000000</div>
         <a class="avatar" id="avatar" href="/profile" aria-label="Open profile">FN</a>
       </div>

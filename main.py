@@ -17,6 +17,7 @@ from app.routers import (
     dashboard,
     email_config,
     google_oauth,
+    notifications,
     pages,
     pdf,
     sms,
@@ -61,6 +62,7 @@ app.include_router(chatbot.router)
 app.include_router(email_config.router)
 app.include_router(google_oauth.router)
 app.include_router(sms_receiver.router)
+app.include_router(notifications.router)
 
 
 @app.exception_handler(Exception)
@@ -75,6 +77,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 @app.on_event("startup")
 async def startup_event() -> None:
     async with SessionLocal() as session:
+        from app.utils.db_init import verify_user_streak_columns
+        await verify_user_streak_columns(session)
         await seed_chatbot_questions(session)
     start_scheduler(settings.email_check_interval_minutes)
 

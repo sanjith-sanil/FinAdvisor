@@ -24,6 +24,9 @@ class User(Base):
     date_of_birth: Mapped[Date | None] = mapped_column(Date)
     address: Mapped[str | None] = mapped_column(Text)
     profile_picture_url: Mapped[str | None] = mapped_column(Text)
+    last_login_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
+    current_streak: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
+    longest_streak: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime.datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
