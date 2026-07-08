@@ -1,0 +1,39 @@
+databases:
+  - name: finadvisor-db
+    plan: free
+    databaseName: finadvisor
+    user: finadvisor_user
+
+services:
+  - type: web
+    name: finadvisor-web
+    plan: free
+    env: docker
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finadvisor-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: EMAIL_ENCRYPTION_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: '["*"]'
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: SERVER_BASE_URL
+        value: https://finadvisor-web.onrender.com
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: GOOGLE_LOGIN_REDIRECT_URI
+        sync: false

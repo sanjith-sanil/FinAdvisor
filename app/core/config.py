@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -5,6 +6,14 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def convert_postgres_scheme(cls, v: str) -> str:
+        if v and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     secret_key: str
     email_encryption_key: str
     upload_dir: str = "./uploads"
