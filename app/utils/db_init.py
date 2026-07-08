@@ -32,3 +32,35 @@ async def verify_user_streak_columns(session: AsyncSession) -> None:
                     logger.debug(f"Column already exists: {stmt}")
                 else:
                     logger.error(f"Failed to execute: {stmt}. Error: {e}")
+
+
+async def ensure_notifications_table(session: AsyncSession) -> None:
+    """Create the notifications table if it doesn't exist."""
+    try:
+        await session.execute(text("SELECT 1 FROM notifications LIMIT 1"))
+    except Exception:
+        await session.rollback()
+        logger.info("Creating notifications table...")
+        try:
+            await session.execute(text("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    notification_type VARCHAR(50) NOT NULL DEFAULT 'transaction',
+                    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+            """))
+            await session.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id)"
+            ))
+            await session.commit()
+            logger.info("notifications table created successfully.")
+        except Exception as e:
+            await session.rollback()
+            if "already exists" in str(e).lower():
+                logger.debug("notifications table already exists")
+            else:
+                logger.error(f"Failed to create notifications table: {e}")

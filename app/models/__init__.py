@@ -6,6 +6,7 @@ from app.models.card_emi import CardEmi
 from app.models.chatbot import ChatbotMessage, ChatbotQuestionTemplate, ChatbotSession
 from app.models.collection_log import CollectionLog
 from app.models.email_config import EmailConfig
+from app.models.notification import Notification
 from app.models.pdf_upload import PdfUpload
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -22,6 +23,7 @@ __all__ = [
     "ChatbotMessage",
     "CollectionLog",
     "EmailConfig",
+    "Notification",
     "Transaction",
     "SmsEmailRaw",
     "PdfUpload",

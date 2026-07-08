@@ -529,6 +529,13 @@ async function loadDashboardData() {
     } catch (e) {
       console.error("Error rendering alerts:", e);
     }
+
+    // --- Budget Progress Bar ---
+    try {
+      await loadBudgetProgress(userId);
+    } catch (e) {
+      console.error("Error loading budget progress:", e);
+    }
   } catch (err) {
     console.error("Dashboard load error:", err);
     showToast("Failed to load dashboard data", "error");
@@ -791,4 +798,68 @@ async function setupOnboardingListeners(summary) {
       showToast("Failed to save budget", "error");
     }
   });
+}
+
+// --- Budget Progress Bar ---
+async function loadBudgetProgress(userId) {
+  const token = localStorage.getItem("finadvisor_token");
+  if (!userId || !token) return;
+
+  const widget = document.getElementById("budgetProgressWidget");
+  if (!widget) return;
+
+  try {
+    const res = await fetch(`/api/v1/users/${userId}/budget`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const limit = data.monthly_limit || 0;
+    const spent = data.current_spent || 0;
+
+    if (limit <= 0) {
+      widget.classList.add("hidden");
+      return;
+    }
+
+    // Show widget
+    widget.classList.remove("hidden");
+
+    const pct = Math.min((spent / limit) * 100, 100);
+
+    // Format amounts
+    const fmtSpent = `₹${Number(spent).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+    const fmtLimit = `₹${Number(limit).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
+    document.getElementById("budgetSpent").textContent = fmtSpent;
+    document.getElementById("budgetLimit").textContent = fmtLimit;
+    document.getElementById("budgetPercentLabel").textContent = `${Math.round(pct)}% used`;
+
+    // Color the fill bar
+    const fill = document.getElementById("budgetFill");
+    if (fill) {
+      fill.style.width = `${pct}%`;
+      if (pct < 60) {
+        fill.style.background = "linear-gradient(90deg, #22c55e, #4ade80)";
+      } else if (pct < 80) {
+        fill.style.background = "linear-gradient(90deg, #f59e0b, #fbbf24)";
+      } else {
+        fill.style.background = "linear-gradient(90deg, #ef4444, #f87171)";
+      }
+    }
+
+    // Overspend warning toast (once per session)
+    if (pct >= 80 && !sessionStorage.getItem("finadvisor_budget_warned")) {
+      sessionStorage.setItem("finadvisor_budget_warned", "1");
+      const msg = pct >= 100
+        ? `🚨 You've exceeded your monthly budget! (${Math.round(pct)}% used)`
+        : `⚠️ You've used ${Math.round(pct)}% of your monthly budget!`;
+      showToast(msg, pct >= 100 ? "error" : "warning");
+    }
+
+    if (window.lucide) lucide.createIcons();
+  } catch (e) {
+    console.error("Budget progress error:", e);
+  }
 }

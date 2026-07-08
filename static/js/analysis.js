@@ -462,7 +462,9 @@ async function loadSpendingHeatmap() {
       }
     });
     if (!response.ok) return;
-    const dailyData = await response.json();
+    const dailyResponse = await response.json();
+    const dailyData = dailyResponse.days || dailyResponse;  // backward compat
+    const thresholds = dailyResponse.thresholds || { p25: 500, p50: 2000, p75: 5000 };
     
     // Map dates to amounts
     const spendMap = {};
@@ -499,9 +501,9 @@ async function loadSpendingHeatmap() {
       }
       
       if (amount > 0) {
-        if (amount <= 500) color = "#dcfce7";
-        else if (amount <= 2000) color = "#86efac";
-        else if (amount <= 5000) color = "#22c55e";
+        if (amount <= thresholds.p25) color = "#dcfce7";
+        else if (amount <= thresholds.p50) color = "#86efac";
+        else if (amount <= thresholds.p75) color = "#22c55e";
         else color = "#15803d";
       }
 

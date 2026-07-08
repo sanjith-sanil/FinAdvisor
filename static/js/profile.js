@@ -843,15 +843,25 @@ async function loadUserBadges() {
       return;
     }
     const badges = await response.json();
+
+    // Detect newly unlocked badges
+    const prevState = JSON.parse(localStorage.getItem('finadvisor_badges_state') || '{}');
+    const newlyUnlocked = [];
+    badges.forEach(b => {
+      if (b.unlocked && !prevState[b.id]) {
+        newlyUnlocked.push(b);
+      }
+    });
     
     grid.innerHTML = badges.map(b => {
       const icon = b.icon || "award";
       const borderStyle = b.unlocked ? "border:2px solid var(--primary);" : "opacity:0.6;filter:grayscale(80%);border:1px solid var(--neutral-200);";
       const bg = b.unlocked ? "background:var(--primary-light);" : "background:var(--neutral-100);";
       const iconColor = b.unlocked ? "color:var(--primary);" : "color:var(--neutral-400);";
+      const isNew = newlyUnlocked.some(nu => nu.id === b.id);
       
       return `
-        <div class="glass-card badge-card" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px;border-radius:12px;${borderStyle}transition:all 0.2s ease;">
+        <div class="glass-card badge-card ${isNew ? 'badge-unlock-anim' : ''}" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px;border-radius:12px;${borderStyle}transition:all 0.2s ease;">
           <div class="badge-icon-wrap" style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:12px;${bg}${iconColor}">
             <i data-lucide="${icon}" style="width:22px;height:22px;"></i>
           </div>
@@ -865,6 +875,18 @@ async function loadUserBadges() {
     }).join("");
     
     if (window.lucide) lucide.createIcons();
+
+    // Store current badge state
+    const currentState = {};
+    badges.forEach(b => { currentState[b.id] = b.unlocked; });
+    localStorage.setItem('finadvisor_badges_state', JSON.stringify(currentState));
+
+    // Show toasts for newly unlocked badges
+    newlyUnlocked.forEach(b => {
+      if (typeof showToast === 'function') {
+        showToast(`🏆 Badge unlocked: ${b.title}!`, 'success');
+      }
+    });
   } catch (error) {
     console.error("Error fetching badges", error);
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--danger);">Error loading achievements</div>`;

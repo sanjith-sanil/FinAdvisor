@@ -340,18 +340,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (clearNotifBtn) {
-    clearNotifBtn.addEventListener("click", () => {
-      const list = document.getElementById("notifDropdownList");
-      if (!list) return;
-      const items = list.querySelectorAll(".notif-item");
-      const clickedIds = JSON.parse(localStorage.getItem("finadvisor_read_notifs") || "[]");
-      items.forEach(item => {
-        const id = item.dataset.id;
-        if (!clickedIds.includes(id)) {
-          clickedIds.push(id);
-        }
-      });
-      localStorage.setItem("finadvisor_read_notifs", JSON.stringify(clickedIds));
+    clearNotifBtn.addEventListener("click", async () => {
+      const userId = getUserId();
+      const token = localStorage.getItem("finadvisor_token");
+      if (!userId || !token) return;
+      try {
+        await fetch(`/api/v1/notifications/${userId}/read`, {
+          method: "PATCH",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+      } catch (e) { /* ignore */ }
       loadNotifications();
     });
   }
@@ -372,21 +370,19 @@ async function loadNotifications() {
       }
     });
     if (!response.ok) return;
-    const notifications = await response.json();
-    renderNotifications(notifications);
+    const data = await response.json();
+    const notifications = data.notifications || data;
+    const unreadCount = data.unread_count ?? notifications.filter(n => n.unread).length;
+    renderNotifications(notifications, unreadCount);
   } catch (error) {
     console.error("Error loading notifications", error);
   }
 }
 
-function renderNotifications(notifications) {
+function renderNotifications(notifications, unreadCount) {
   const list = document.getElementById("notifDropdownList");
   const badge = document.getElementById("notifBadge");
   if (!list) return;
-
-  const clickedIds = JSON.parse(localStorage.getItem("finadvisor_read_notifs") || "[]");
-  const unreadList = notifications.filter(n => n.unread && !clickedIds.includes(n.id));
-  const unreadCount = unreadList.length;
 
   if (badge) {
     if (unreadCount > 0) {
@@ -405,15 +401,15 @@ function renderNotifications(notifications) {
   const icons = {
     reminder: "calendar",
     statement: "file-text",
-    transaction: "credit-card"
+    transaction: "credit-card",
+    achievement: "trophy"
   };
 
   list.innerHTML = notifications.map(n => {
-    const isUnread = n.unread && !clickedIds.includes(n.id);
     const icon = icons[n.type] || "bell";
     const timeStr = formatTimeAgo(n.timestamp);
     return `
-      <div class="notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id}">
+      <div class="notif-item ${n.unread ? 'unread' : ''}" data-id="${n.id}">
         <div class="notif-item-icon">
           <i data-lucide="${icon}"></i>
         </div>
@@ -428,18 +424,26 @@ function renderNotifications(notifications) {
 
   if (window.lucide) lucide.createIcons();
 
-  list.querySelectorAll(".notif-item").forEach(item => {
-    item.addEventListener("click", () => {
+  const userId = getUserId();
+  const token = localStorage.getItem("finadvisor_token");
+  list.querySelectorAll(".notif-item.unread").forEach(item => {
+    item.addEventListener("click", async () => {
       const id = item.dataset.id;
-      if (!clickedIds.includes(id)) {
-        clickedIds.push(id);
-        localStorage.setItem("finadvisor_read_notifs", JSON.stringify(clickedIds));
-      }
       item.classList.remove("unread");
-      const newUnreadCount = notifications.filter(n => n.unread && !clickedIds.includes(n.id)).length;
+      // Mark as read on server
+      if (userId && token) {
+        try {
+          await fetch(`/api/v1/notifications/${userId}/read/${id}`, {
+            method: "PATCH",
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+        } catch (e) { /* ignore — optimistic UI */ }
+      }
+      // Update badge count
+      const remaining = list.querySelectorAll(".notif-item.unread").length;
       if (badge) {
-        if (newUnreadCount > 0) {
-          badge.textContent = newUnreadCount;
+        if (remaining > 0) {
+          badge.textContent = remaining;
         } else {
           badge.classList.add("hidden");
         }

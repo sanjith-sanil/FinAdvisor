@@ -1697,7 +1697,7 @@ function runCardComparison() {
 
   const metrics = [
     { label: "Card Type", key: "card_type", format: v => String(v || "Credit").toUpperCase() },
-    { label: "Credit Limit", key: "credit_limit", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "—" },
+    { label: "Credit Limit", key: "credit_limit", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "<span class='muted-dash'>N/A</span>" },
     { label: "Outstanding Balance", key: "current_balance", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" },
     { label: "Utilization Ratio", key: "utilization", calc: c => {
         const lim = floatVal(c.credit_limit);
@@ -1705,10 +1705,10 @@ function runCardComparison() {
         return lim > 0 ? `${(bal/lim*100).toFixed(1)}%` : "0%";
       } 
     },
-    { label: "Annual Fee", key: "annual_fee", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" },
+    { label: "Annual Fee", key: "annual_fee", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "<span class='muted-dash'>N/A</span>" },
     { label: "Cashback Rate", key: "cashback_rate", format: v => v || "—" },
     { label: "Lounge Access", key: "lounge_access", calc: c => c.lounge_access ? `Yes (${c.lounge_visits_per_quarter || 0}/qtr)` : "No" },
-    { label: "Monthly EMI", key: "monthly_emi_amount", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "Rs0" }
+    { label: "Monthly EMI", key: "monthly_emi_amount", format: v => v ? `Rs${Number(v).toLocaleString("en-IN")}` : "<span class='muted-dash'>N/A</span>" }
   ];
 
   const body = document.getElementById("compareTableBody");
@@ -1783,6 +1783,20 @@ function runCardComparison() {
         }
       }
     });
+
+    // Check if radar chart is meaningfully populated
+    const allZero = datasets.every(ds => ds.data.every(v => v === 0));
+    if (allZero) {
+      const radarContainer = canvas.parentElement;
+      if (radarContainer) {
+        radarContainer.insertAdjacentHTML('beforeend',
+          `<div style="position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:11px;color:var(--neutral-500);padding:8px;">
+            <i data-lucide="info" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
+            Add card benefits (annual fee, lounge access, interest rate) in card settings to unlock full comparison.
+          </div>`
+        );
+      }
+    }
   }
 
   // Generate Smart Card Recommendation

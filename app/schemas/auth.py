@@ -22,4 +22,6 @@ class AuthResponse(BaseModel):
     full_name: str
     email: EmailStr
     access_token: str | None = None
+    current_streak: int = 0
+    longest_streak: int = 0
 

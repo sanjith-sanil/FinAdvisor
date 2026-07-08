@@ -42,4 +42,5 @@ class User(Base):
     chatbot_sessions = relationship("ChatbotSession", back_populates="user", cascade="all, delete")
     chatbot_messages = relationship("ChatbotMessage", back_populates="user", cascade="all, delete")
     card_emis = relationship("CardEmi", back_populates="user", cascade="all, delete")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete")
 

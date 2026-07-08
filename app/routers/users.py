@@ -44,45 +44,6 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # --- Daily Login Streak Logic ---
-    today = datetime.date.today()
-    if not user.last_login_date:
-        user.current_streak = 1
-        user.longest_streak = 1
-        user.last_login_date = today
-        await db.commit()
-        await db.refresh(user)
-    elif user.last_login_date != today:
-        delta = today - user.last_login_date
-        old_streak = user.current_streak or 0
-        if delta.days == 1:
-            user.current_streak = old_streak + 1
-        else:
-            user.current_streak = 1
-            
-        user.longest_streak = max(user.longest_streak or 0, user.current_streak)
-        user.last_login_date = today
-        await db.commit()
-        await db.refresh(user)
-        
-        # Publish live notification alert for streak milestone
-        try:
-            import json
-            from app.services.notification_service import notification_hub
-            await notification_hub.publish(
-                str(user.id),
-                json.dumps({
-                    "id": f"streak-{user.id}-{today}",
-                    "title": "Streak Active! 🔥",
-                    "meta": f"You're on a {user.current_streak}-day login streak! Keep it up.",
-                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    "type": "reminder",
-                    "unread": True
-                })
-            )
-        except Exception:
-            pass
-
     return user
 
 
@@ -488,9 +449,14 @@ async def get_user_budget(
         raise HTTPException(status_code=403, detail="Forbidden")
         
     from app.models.budget_goal import BudgetGoal
+    from app.models.transaction import Transaction
+    from sqlalchemy import func as sa_func
     import datetime
     
     today = datetime.date.today()
+    first_of_month = datetime.date(today.year, today.month, 1)
+    
+    # Get budget goal
     stmt = select(BudgetGoal).where(
         BudgetGoal.user_id == user_id,
         BudgetGoal.month == today.month,
@@ -498,6 +464,18 @@ async def get_user_budget(
     )
     budget = (await db.execute(stmt)).scalar_one_or_none()
     
-    if budget:
-        return {"monthly_limit": float(budget.monthly_limit), "current_spent": float(budget.current_spent or 0)}
-    return {"monthly_limit": 0.0, "current_spent": 0.0}
+    if not budget:
+        return {"monthly_limit": 0.0, "current_spent": 0.0}
+    
+    # Compute actual spending from transactions this month
+    spend_stmt = select(sa_func.coalesce(sa_func.sum(Transaction.amount), 0)).where(
+        Transaction.user_id == user_id,
+        Transaction.transaction_date >= first_of_month,
+        Transaction.transaction_date <= today,
+    )
+    actual_spent = (await db.execute(spend_stmt)).scalar() or 0
+
+    return {
+        "monthly_limit": float(budget.monthly_limit),
+        "current_spent": float(actual_spent),
+    }

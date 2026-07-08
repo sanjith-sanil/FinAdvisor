@@ -308,7 +308,7 @@ async def get_daily_spending(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[dict]:
+) -> dict:
     if user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Forbidden")
         
@@ -341,5 +341,17 @@ async def get_daily_spending(
                 "date": date_str,
                 "amount": float(r.amount)
             })
+
+    # Compute adaptive color thresholds from user's own spending
+    non_zero_amounts = [r["amount"] for r in results if r["amount"] > 0]
+    thresholds = {"p25": 500, "p50": 2000, "p75": 5000}  # fallback defaults
+    if len(non_zero_amounts) >= 4:
+        sorted_amounts = sorted(non_zero_amounts)
+        n = len(sorted_amounts)
+        thresholds = {
+            "p25": sorted_amounts[n // 4],
+            "p50": sorted_amounts[n // 2],
+            "p75": sorted_amounts[(3 * n) // 4],
+        }
             
-    return results
+    return {"days": results, "thresholds": thresholds}

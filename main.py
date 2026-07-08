@@ -77,8 +77,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 @app.on_event("startup")
 async def startup_event() -> None:
     async with SessionLocal() as session:
-        from app.utils.db_init import verify_user_streak_columns
+        from app.utils.db_init import verify_user_streak_columns, ensure_notifications_table
         await verify_user_streak_columns(session)
+        await ensure_notifications_table(session)
         await seed_chatbot_questions(session)
     start_scheduler(settings.email_check_interval_minutes)
 

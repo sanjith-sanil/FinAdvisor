@@ -81,7 +81,26 @@ async def login(payload: AuthLogin, db: AsyncSession = Depends(get_db)) -> AuthR
 
     if replacement_hash:
         user.password_hash = replacement_hash
-        await db.commit()
+
+    # --- Daily Login Streak Logic (runs once per login) ---
+    import datetime
+    today = datetime.date.today()
+    if not user.last_login_date:
+        user.current_streak = 1
+        user.longest_streak = 1
+        user.last_login_date = today
+    elif user.last_login_date != today:
+        delta = today - user.last_login_date
+        old_streak = user.current_streak or 0
+        if delta.days == 1:
+            user.current_streak = old_streak + 1
+        else:
+            user.current_streak = 1
+        user.longest_streak = max(user.longest_streak or 0, user.current_streak)
+        user.last_login_date = today
+
+    await db.commit()
+    await db.refresh(user)
 
     token = create_access_token(user.id)
     return AuthResponse(
@@ -90,4 +109,6 @@ async def login(payload: AuthLogin, db: AsyncSession = Depends(get_db)) -> AuthR
         full_name=user.full_name,
         email=user.email,
         access_token=token,
+        current_streak=user.current_streak or 0,
+        longest_streak=user.longest_streak or 0,
     )
