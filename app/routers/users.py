@@ -44,6 +44,15 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Bootstrap streak for users who haven't logged in via the new login flow yet
+    if not user.last_login_date:
+        today = datetime.date.today()
+        user.current_streak = 1
+        user.longest_streak = max(user.longest_streak or 0, 1)
+        user.last_login_date = today
+        await db.commit()
+        await db.refresh(user)
+
     return user
 
 
