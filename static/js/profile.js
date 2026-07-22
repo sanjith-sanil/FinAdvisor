@@ -12,7 +12,14 @@ const initialTab  = activeTabEl ? activeTabEl.dataset.tab : "personal";
 
 // Explicitly show/hide each panel — overrides any CSS caching issues
 Object.entries(tabs).forEach(([key, el]) => {
-	if (el) el.style.display = key === initialTab ? "block" : "none";
+	if (el) {
+		if (key === initialTab) {
+			el.classList.remove("hidden");
+			el.style.display = "block";
+		} else {
+			el.style.display = "none";
+		}
+	}
 });
 
 if (initialTab === "badges") {
@@ -25,7 +32,14 @@ document.querySelectorAll(".profile-tab").forEach((tab) => {
 		document.querySelectorAll(".profile-tab").forEach((item) => item.classList.remove("active"));
 		tab.classList.add("active");
 		Object.entries(tabs).forEach(([key, el]) => {
-			if (el) el.style.display = key === target ? "block" : "none";
+			if (el) {
+				if (key === target) {
+					el.classList.remove("hidden");
+					el.style.display = "block";
+				} else {
+					el.style.display = "none";
+				}
+			}
 		});
 		if (target === "badges") {
 			loadUserBadges();
@@ -39,7 +53,14 @@ if (hashTab && tabs[hashTab]) {
   document.querySelectorAll(".profile-tab").forEach((item) => item.classList.remove("active"));
   document.querySelector(`.profile-tab[data-tab="${hashTab}"]`)?.classList.add("active");
   Object.entries(tabs).forEach(([key, el]) => {
-    if (el) el.style.display = key === hashTab ? "block" : "none";
+    if (el) {
+		if (key === hashTab) {
+			el.classList.remove("hidden");
+			el.style.display = "block";
+		} else {
+			el.style.display = "none";
+		}
+	}
   });
   if (hashTab === "badges") {
     loadUserBadges();
@@ -822,7 +843,7 @@ async function loadUserBadges() {
   const userId = getUserId();
   const token = localStorage.getItem("finadvisor_token");
   const grid = document.getElementById("badgesGrid");
-  if (!grid || !userId || !token) return;
+  if (!grid || !userId) return;
 
   grid.innerHTML = `
     <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--neutral-500);">
@@ -833,11 +854,9 @@ async function loadUserBadges() {
   if (window.lucide) lucide.createIcons();
 
   try {
-    const response = await fetch(`/api/v1/users/${userId}/badges`, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const response = await fetch(`/api/v1/users/${userId}/badges`, { headers });
     if (!response.ok) {
       grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--danger);">Failed to load achievements</div>`;
       return;
