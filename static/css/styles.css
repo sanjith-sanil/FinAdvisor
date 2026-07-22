@@ -8728,3 +8728,65 @@ body.theme-warmcharcoal .notif-item.unread .notif-item-icon {
   opacity: 1 !important;
   filter: none !important;
 }
+
+/* ── Snapchat-style Streak Counter ─────────────────────────────── */
+.streak-snap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  cursor: default;
+  user-select: none;
+}
+
+.streak-snap-flame {
+  font-size: 20px;
+  line-height: 1;
+  animation: streakFlameWiggle 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 149, 0, 0.5));
+}
+
+.streak-snap-count {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF9500, #FF2D55);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  position: relative;
+  top: 0px;
+}
+
+/* Subtle flame wiggle — mimics Snapchat's fire feel */
+@keyframes streakFlameWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-4deg) scale(1.05); }
+  30% { transform: rotate(3deg) scale(1.1); }
+  45% { transform: rotate(-2deg) scale(1.05); }
+  60% { transform: rotate(1deg) scale(1); }
+}
+
+/* Glow pulse on the count when streak is high (>=7) */
+.streak-snap.hot .streak-snap-count {
+  text-shadow: 0 0 8px rgba(255, 45, 85, 0.4);
+  animation: streakCountPulse 2s ease-in-out infinite;
+}
+
+.streak-snap.hot .streak-snap-flame {
+  font-size: 22px;
+  filter: drop-shadow(0 0 6px rgba(255, 45, 85, 0.6));
+}
+
+@keyframes streakCountPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* Dark theme adjustments */
+.theme-graphite .streak-snap-count,
+.theme-warmcharcoal .streak-snap-count {
+  filter: brightness(1.15);
+}

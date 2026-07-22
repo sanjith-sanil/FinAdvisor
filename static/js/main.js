@@ -321,6 +321,9 @@ document.addEventListener("DOMContentLoaded", () => {
   loadNotifications();
   connectNotificationStream();
 
+  // --- Navbar Streak Counter ---
+  loadNavStreak();
+
   const notifBellBtn = document.getElementById("notifBellBtn");
   const notifDropdown = document.getElementById("notifDropdown");
   const clearNotifBtn = document.getElementById("clearNotifBtn");
@@ -503,3 +506,39 @@ function playNotificationSound() {
   }
 }
 
+
+// --- Navbar Streak Counter (Snapchat-style) ---
+async function loadNavStreak() {
+  const userId = getUserId();
+  const token = localStorage.getItem("finadvisor_token");
+  if (!userId || !token) return;
+
+  const badge = document.getElementById("navStreakBadge");
+  const countEl = document.getElementById("navStreakCount");
+  if (!badge || !countEl) return;
+
+  try {
+    const res = await fetch(`/api/v1/users/${userId}`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const user = await res.json();
+    const streak = user.current_streak || 0;
+
+    if (streak > 0) {
+      countEl.textContent = streak;
+      badge.style.display = "inline-flex";
+
+      // Add "hot" class for streaks >= 7 (extra glow effect)
+      if (streak >= 7) {
+        badge.classList.add("hot");
+      } else {
+        badge.classList.remove("hot");
+      }
+    } else {
+      badge.style.display = "none";
+    }
+  } catch (e) {
+    console.error("Error loading nav streak", e);
+  }
+}

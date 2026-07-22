@@ -451,22 +451,6 @@ async function loadDashboardData() {
 
     const summary = await summaryRes.json();
 
-    // Fetch user profile for login streak
-    try {
-      const userRes = await fetch(`/api/v1/users/${userId}`);
-      if (userRes.ok) {
-        const user = await userRes.json();
-        const streakBadge = document.getElementById("dashboardStreakBadge");
-        const streakCount = document.getElementById("streakCount");
-        if (streakBadge && streakCount && user.current_streak > 0) {
-          streakCount.textContent = user.current_streak;
-          streakBadge.style.display = "inline-flex";
-        }
-      }
-    } catch (e) {
-      console.error("Error loading user streak", e);
-    }
-
     // Populate the dropdown first as it is critical and fast
     try {
       populateManualCardDropdown(summary);
