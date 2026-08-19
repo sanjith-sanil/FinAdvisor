@@ -1,12 +1,13 @@
 import secrets
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.limiter import limiter
 from app.db.database import get_db
 from app.models.user import User
 from app.schemas.auth import AuthLogin, AuthRegister, AuthResponse
@@ -37,7 +38,8 @@ def _hash_password(password: str) -> str:
 
 
 @router.post("/register", response_model=AuthResponse)
-async def register(payload: AuthRegister, db: AsyncSession = Depends(get_db)) -> AuthResponse:
+@limiter.limit("3/minute")
+async def register(request: Request, payload: AuthRegister, db: AsyncSession = Depends(get_db)) -> AuthResponse:
     if payload.password != payload.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
@@ -69,7 +71,8 @@ async def register(payload: AuthRegister, db: AsyncSession = Depends(get_db)) ->
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(payload: AuthLogin, db: AsyncSession = Depends(get_db)) -> AuthResponse:
+@limiter.limit("5/minute")
+async def login(request: Request, payload: AuthLogin, db: AsyncSession = Depends(get_db)) -> AuthResponse:
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
     if not user or not user.password_hash:

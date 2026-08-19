@@ -27,9 +27,21 @@ from app.routers import (
 )
 from app.services.scheduler_service import shutdown_scheduler, start_scheduler
 
+from app.core.limiter import limiter
+from slowapi.errors import RateLimitExceeded
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="FinAdvisor", version="1.0.0")
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}"},
+    )
 
 base_dir = Path(__file__).resolve().parent
 static_dir = base_dir / "static"

@@ -1,10 +1,9 @@
-from __future__ import annotations
-
 import datetime
 import uuid
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from app.core.limiter import limiter
 from app.models.user import User
 from app.core.security import get_current_user
 from sqlalchemy import desc, select
@@ -171,7 +170,9 @@ async def chatbot_welcome(
 
 
 @router.post("/ask", response_model=ChatAskResponse)
+@limiter.limit("20/minute")
 async def chatbot_ask(
+    request: Request,
     payload: ChatAskRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

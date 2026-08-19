@@ -1,9 +1,11 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.limiter import limiter
 
 from app.db.database import SessionLocal, get_db
 from app.models.email_config import EmailConfig
@@ -64,7 +66,9 @@ async def run_email_sync(user_id: uuid.UUID, config_id: uuid.UUID, force_full_sy
 
 
 @router.post("/test-connection")
+@limiter.limit("5/minute")
 async def test_connection(
+    request: Request,
     payload: EmailTestRequest,
     current_user: User = Depends(get_current_user),
 ) -> dict:

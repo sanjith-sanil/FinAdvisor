@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.limiter import limiter
 from app.db.database import get_db
 from app.core.config import settings
 from app.models.collection_log import CollectionLog
@@ -29,7 +30,9 @@ def _validate_key(user: User, api_key: str | None) -> None:
 
 
 @router.post("/receive")
+@limiter.limit("30/minute")
 async def receive_sms(
+    request: Request,
     payload: SmsReceiveRequest,
     x_finadvisor_key: str | None = Header(default=None, alias="X-FinAdvisor-Key"),
     db: AsyncSession = Depends(get_db),

@@ -149,96 +149,6 @@ async def create_transaction(
     return txn
 
 
-@router.get("/{transaction_id}", response_model=TransactionOut)
-async def get_transaction(
-    transaction_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> TransactionOut:
-    txn = await db.get(Transaction, transaction_id)
-    if not txn or txn.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    return txn
-
-
-@router.put("/{transaction_id}", response_model=TransactionOut)
-async def update_transaction(
-    transaction_id: uuid.UUID,
-    payload: TransactionUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> TransactionOut:
-    txn = await db.get(Transaction, transaction_id)
-    if not txn or txn.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-        
-    old_amount = float(txn.amount)
-    old_type = txn.transaction_type
-    old_card_id = txn.card_id
-    old_bank_account_id = txn.bank_account_id
-
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(txn, field, value)
-        
-    await resolve_transaction_accounts(db, txn)
-    await db.flush()
-
-    if old_card_id or old_bank_account_id:
-        await sync_balances_for_transaction(
-            db=db,
-            user_id=txn.user_id,
-            card_id=old_card_id,
-            bank_account_id=old_bank_account_id,
-            amount=0.0,
-            txn_type=old_type,
-            operation="delete",
-            old_amount=old_amount,
-            old_type=old_type
-        )
-    if txn.card_id or txn.bank_account_id:
-        await sync_balances_for_transaction(
-            db=db,
-            user_id=txn.user_id,
-            card_id=txn.card_id,
-            bank_account_id=txn.bank_account_id,
-            amount=txn.amount,
-            txn_type=txn.transaction_type,
-            operation="insert"
-        )
-        
-    await db.commit()
-    await db.refresh(txn)
-    return txn
-
-
-@router.delete("/{transaction_id}")
-async def delete_transaction(
-    transaction_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> dict:
-    txn = await db.get(Transaction, transaction_id)
-    if not txn or txn.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-        
-    if txn.card_id or txn.bank_account_id:
-        await sync_balances_for_transaction(
-            db=db,
-            user_id=txn.user_id,
-            card_id=txn.card_id,
-            bank_account_id=txn.bank_account_id,
-            amount=0.0,
-            txn_type=txn.transaction_type,
-            operation="delete",
-            old_amount=txn.amount,
-            old_type=txn.transaction_type
-        )
-        
-    await db.delete(txn)
-    await db.commit()
-    return {"status": "deleted"}
-
-
 @router.get("/export/csv")
 async def export_transactions_csv(
     user_id: uuid.UUID,
@@ -355,3 +265,93 @@ async def get_daily_spending(
         }
             
     return {"days": results, "thresholds": thresholds}
+
+
+@router.get("/{transaction_id}", response_model=TransactionOut)
+async def get_transaction(
+    transaction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransactionOut:
+    txn = await db.get(Transaction, transaction_id)
+    if not txn or txn.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return txn
+
+
+@router.put("/{transaction_id}", response_model=TransactionOut)
+async def update_transaction(
+    transaction_id: uuid.UUID,
+    payload: TransactionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransactionOut:
+    txn = await db.get(Transaction, transaction_id)
+    if not txn or txn.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    old_amount = float(txn.amount)
+    old_type = txn.transaction_type
+    old_card_id = txn.card_id
+    old_bank_account_id = txn.bank_account_id
+
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(txn, field, value)
+        
+    await resolve_transaction_accounts(db, txn)
+    await db.flush()
+
+    if old_card_id or old_bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=old_card_id,
+            bank_account_id=old_bank_account_id,
+            amount=0.0,
+            txn_type=old_type,
+            operation="delete",
+            old_amount=old_amount,
+            old_type=old_type
+        )
+    if txn.card_id or txn.bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=txn.card_id,
+            bank_account_id=txn.bank_account_id,
+            amount=txn.amount,
+            txn_type=txn.transaction_type,
+            operation="insert"
+        )
+        
+    await db.commit()
+    await db.refresh(txn)
+    return txn
+
+
+@router.delete("/{transaction_id}")
+async def delete_transaction(
+    transaction_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    txn = await db.get(Transaction, transaction_id)
+    if not txn or txn.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    if txn.card_id or txn.bank_account_id:
+        await sync_balances_for_transaction(
+            db=db,
+            user_id=txn.user_id,
+            card_id=txn.card_id,
+            bank_account_id=txn.bank_account_id,
+            amount=0.0,
+            txn_type=txn.transaction_type,
+            operation="delete",
+            old_amount=txn.amount,
+            old_type=txn.transaction_type
+        )
+        
+    await db.delete(txn)
+    await db.commit()
+    return {"status": "deleted"}
